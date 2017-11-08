@@ -182,8 +182,8 @@ proc getdefines(file: string): string =
     for def in FILES[file].findIter(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d.x]+)(?:\r|//|/*).*?$"):
         result &= def.captures[0] & "\n"
 
-proc preprocess(file: string): string =
-    var cmd = "gcc -E " & file
+proc preprocess(file, ppflags: string): string =
+    var cmd = "gcc -E $# $#" % [ppflags, file]
     for inc in INCLUDES:
         cmd &= " -I " & inc
 
@@ -229,7 +229,7 @@ proc ctags(file: string): string =
 
     return fdata
     
-proc c2nim(fl, outfile, flags: string, recurse, preproc, ctag, define: bool, compile, dynlib: seq[string] = @[]) =
+proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: bool, compile, dynlib: seq[string] = @[]) =
     var file = search(fl)
     if file == "":
         return
@@ -247,12 +247,12 @@ proc c2nim(fl, outfile, flags: string, recurse, preproc, ctag, define: bool, com
         var incls = getincls(file)
         for inc in incls:
             incout &= "import " & inc.splitFile().name & "\n"
-            c2nim(inc, getnimout(inc), flags, recurse, preproc, ctag, define)
+            c2nim(inc, getnimout(inc), flags, ppflags, recurse, preproc, ctag, define, compile, dynlib)
 
     var cfile = file
     if preproc:
         cfile = "temp.c"
-        writeFile(cfile, preprocess(file))
+        writeFile(cfile, preprocess(file, ppflags))
     elif ctag:
         cfile = "temp.c"
         writeFile(cfile, ctags(file))
@@ -395,7 +395,9 @@ proc runcfg(cfg: string) =
             var preproc = false
             var ctag = false
             var define = false
+            var noprocess = false
             var flags = "--stdcall"
+            var ppflags = ""
 
             # Save C files in case they have changed
             savefile(sfile)
@@ -410,11 +412,15 @@ proc runcfg(cfg: string) =
                         ctag = true
                     elif act == "defines":
                         define = true
+                    elif act == "noprocess":
+                        noprocess = true
                 elif act == "flags":
                     flags = CONFIG[file][act]
+                elif act == "ppflags":
+                    ppflags = CONFIG[file][act]
 
-
-            c2nim(file, getnimout(file), flags, recurse, preproc, ctag, define, compile, dynlib)
+            if not noprocess:
+                c2nim(file, getnimout(file), flags, ppflags, recurse, preproc, ctag, define, compile, dynlib)
         
 # ###
 # Main loop

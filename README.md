@@ -68,6 +68,10 @@ The following keys apply to library source code and help with generating the .ni
 
 ```flags``` = flags to pass to the c2nim process in "quotes" [default: --stdcall]. --cdecl, --assumedef, --assumendef may be useful
 
+```ppflags``` = flags to pass to the preprocessor [default: ""]. -D for gcc and others may be useful
+
+```noprocess``` = do not process this source file with c2nim [default: false] - this is useful if a file only needs to be manipulated
+
 Multiple entries for the all following keys are possible by appending any .string to the key. E.g. dynlib.win, compile.dir
 
 ```compile``` = file or dir of files of source code to {.compile.} into generated .nim
