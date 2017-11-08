@@ -246,7 +246,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
     if recurse:
         var incls = getincls(file)
         for inc in incls:
-            incout &= "import " & inc.splitFile().name & "\n"
+            incout &= "import " & inc.splitFile().name.replace(re"[-_\.]", "") & "\n"
             c2nim(inc, getnimout(inc), flags, ppflags, recurse, preproc, ctag, define, compile, dynlib)
 
     var cfile = file
