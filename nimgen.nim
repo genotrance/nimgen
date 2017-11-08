@@ -94,6 +94,7 @@ proc savefile(file: string) =
             FILES.del(file)
     except:
         echo "Failed to save " & file
+        echo getCurrentExceptionMsg()
         
 proc savefiles() =
     for file in FILES.keys():
@@ -195,7 +196,7 @@ proc preprocess(file: string): string =
     let sfile = file.replace("\\", "/")
     for line in data.splitLines():
         if line.strip() != "":
-            if line[0] == '#':
+            if line[0] == '#' and not line.contains("#pragma"):
                 start = false
                 if sfile in line.replace("\\", "/").replace("//", "/"):
                     start = true
