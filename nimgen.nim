@@ -364,8 +364,6 @@ proc runcfg(cfg: string) =
         var compile: seq[string] = @[]
         var dynlib: seq[string] = @[]
         for act in CONFIG[file].keys():
-            echo act
-            echo "A" & CONFIG[file][act] & "A"
             action = act.replace(re"\..*", "")
             if action == "create":
                 writeFile(file, CONFIG[file][act])
