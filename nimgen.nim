@@ -9,7 +9,6 @@ import streams
 import strutils
 import tables
 
-var FILES: TableRef[string, string] = newTable[string, string]()
 var DONE: seq[string] = @[]
 
 var CONFIG: Config
@@ -44,10 +43,9 @@ proc execProc(cmd: string): string =
 # File loction
 
 proc getnimout(file: string): string =
-    var nimout = file.splitFile().name & ".nim"
+    var nimout = file.splitFile().name.replace(re"[\-\.]", "_") & ".nim"
     if OUTPUT != "":
         nimout = OUTPUT/nimout
-    removeFile(nimout)
 
     return nimout
 
@@ -80,61 +78,64 @@ proc search(file: string): string =
 # ###
 # Loading / unloading
 
-proc loadfile(file: string) =
-    if FILES.hasKey(file):
-        return
+template withFile(file: string, body: untyped): untyped =
+    if fileExists(file):
+        var f: File
+        while true:
+            try:
+                f = open(file)
+                break
+            except:
+                sleep(100)
 
-    FILES[file] = readFile(file)
+        var contentOrig = f.readAll()
+        f.close()
+        var content {.inject.} = contentOrig
 
-proc savefile(file: string) =
-    try:
-        if FILES.hasKey(file):
-            writeFile(file, FILES[file])
-        
-            FILES.del(file)
-    except:
-        echo "Failed to save " & file
-        echo getCurrentExceptionMsg()
-        
-proc savefiles() =
-    for file in FILES.keys():
-        savefile(file)
+        body
+
+        if content != contentOrig:
+            var f = open(file, fmWrite)
+            write(f, content)
+            f.close()
+    else:
+        echo "Missing file " & file
 
 # ###
 # Manipulating content
 
 proc prepend(file: string, data: string, search="") =
-    loadfile(file)
-    if search == "":
-        FILES[file] = data & FILES[file]
-    else:
-        let idx = FILES[file].find(search)
-        if idx != -1:
-            FILES[file] = FILES[file][0..<idx] & data & FILES[file][idx..<FILES[file].len()]
+    withFile(file):
+        if search == "":
+            content = data & content
+        else:
+            let idx = content.find(search)
+            if idx != -1:
+                content = content[0..<idx] & data & content[idx..<content.len()]
 
 proc append(file: string, data: string, search="") =
-    loadfile(file)
-    if search == "":
-        FILES[file] &= data
-    else:
-        let idx = FILES[file].find(search)
-        let idy = idx + search.len()
-        if idx != -1:
-            FILES[file] = FILES[file][0..<idy] & data & FILES[file][idy..<FILES[file].len()]
+    withFile(file):
+        if search == "":
+            content &= data
+        else:
+            let idx = content.find(search)
+            let idy = idx + search.len()
+            if idx != -1:
+                content = content[0..<idy] & data & content[idy..<content.len()]
     
 proc freplace(file: string, pattern: string, repl="") =
-    loadfile(file)
-    if pattern in FILES[file]:
-        FILES[file] = FILES[file].replace(pattern, repl)
+    withFile(file):
+        if pattern in content:
+            content = content.replace(pattern, repl)
 
 proc freplace(file: string, pattern: Regex, repl="") =
-    loadfile(file)
-    if FILES[file].find(pattern).isSome():
-        if "$#" in repl:
-            for m in FILES[file].findIter(pattern):
-                FILES[file] = FILES[file].replace(m.match, repl % m.captures[0])
-        else:
-            FILES[file] = FILES[file].replace(pattern, repl)
+    withFile(file):
+        if content.find(pattern).isSome():
+            if "$#" in repl:
+                for m in content.findIter(pattern):
+                    content = content.replace(m.match, repl % m.captures[0])
+            else:
+                content = content.replace(pattern, repl)
 
 proc compile(dir="", file=""): string =
     proc fcompile(file: string): string =
@@ -151,39 +152,36 @@ proc compile(dir="", file=""): string =
     return data
 
 proc fixfuncprotos(file: string) =
-    var data = readFile(file)
-
-    var edit = false
-    for fp in data.findIter(re"(?m)(^.*?)[ ]*\(\*(.*?)\((.*?)\)\)[ \r\n]*\((.*?[\r\n]*.*?)\);"):
-        var tdout = "typedef $# (*type_$#)($#);\n" % [fp.captures[0], fp.captures[1], fp.captures[3]] &
-            "type_$# $#($#);" % [fp.captures[1], fp.captures[1], fp.captures[2]]
-        data = data.replace(fp.match, tdout)
-        edit = true
-
-    if edit:
-        writeFile(file, data)
+    withFile(file):
+        for fp in content.findIter(re"(?m)(^.*?)[ ]*\(\*(.*?)\((.*?)\)\)[ \r\n]*\((.*?[\r\n]*.*?)\);"):
+            var tdout = "typedef $# (*type_$#)($#);\n" % [fp.captures[0], fp.captures[1], fp.captures[3]] &
+                "type_$# $#($#);" % [fp.captures[1], fp.captures[1], fp.captures[2]]
+            content = content.replace(fp.match, tdout)
         
 # ###
 # Convert to Nim
 
 proc getincls(file: string): seq[string] =
-    loadfile(file)
     result = @[]
-    for f in FILES[file].findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
-        var inc = f.captures[0].replace(re"""[<>"]""", "").strip()
-        if FILTER in inc and (not exclude(inc)):
-            result.add(inc)
+    withFile(file):
+        for f in content.findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
+            var inc = f.captures[0].replace(re"""[<>"]""", "").strip()
+            if FILTER in inc and (not exclude(inc)):
+                result.add(inc)
 
-    result = result.deduplicate()
+        result = result.deduplicate()
 
 proc getdefines(file: string): string =
-    loadfile(file)
-    result = ""
-    for def in FILES[file].findIter(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d.x]+)(?:\r|//|/*).*?$"):
-        result &= def.captures[0] & "\n"
+    withFile(file):
+        result = ""
+        for def in content.findIter(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d.x]+)(?:\r|//|/*).*?$"):
+            result &= def.captures[0] & "\n"
 
-proc preprocess(file, ppflags: string): string =
-    var cmd = "gcc -E $# $#" % [ppflags, file]
+proc preprocess(file, ppflags, flags: string): string =
+    var pproc = "gcc"
+    if flags.contains("cpp"):
+        pproc = "g++"
+    var cmd = "$# -E $# $#" % [pproc, ppflags, file]
     for inc in INCLUDES:
         cmd &= " -I " & inc
 
@@ -229,7 +227,7 @@ proc ctags(file: string): string =
 
     return fdata
     
-proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: bool, compile, dynlib: seq[string] = @[]) =
+proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: bool, dynlib, compile: seq[string] = @[]) =
     var file = search(fl)
     if file == "":
         return
@@ -246,30 +244,27 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
     if recurse:
         var incls = getincls(file)
         for inc in incls:
-            incout &= "import " & inc.splitFile().name.replace(re"[-_\.]", "") & "\n"
-            c2nim(inc, getnimout(inc), flags, ppflags, recurse, preproc, ctag, define, compile, dynlib)
+            incout &= "import " & inc.splitFile().name.replace(re"[\-\.]", "_") & "\n"
+            c2nim(inc, getnimout(inc), flags, ppflags, recurse, preproc, ctag, define, dynlib)
 
     var cfile = file
     if preproc:
-        cfile = "temp.c"
-        writeFile(cfile, preprocess(file, ppflags))
+        cfile = "temp-$#.c" % [outfile.extractFilename()]
+        writeFile(cfile, preprocess(file, ppflags, flags))
     elif ctag:
-        cfile = "temp.c"
+        cfile = "temp-$#.c" % [outfile.extractFilename()]
         writeFile(cfile, ctags(file))
 
     if define and (preproc or ctag):
         prepend(cfile, getdefines(file))
-        savefile(cfile)
 
     var extflags = ""
     var passC = ""
     var outlib = ""
-    if compile.len() != 0:
-        passC = "import strutils\n"
-        for inc in INCLUDES:
-            passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [OUTPUT, inc]) & "\n"
-        passC &= "{.push importc.}\n{.push header: \"$#\".}\n" % fl
-        #extflags = "--header:\"$#\"" % fl
+
+    passC = "import strutils\n"
+    for inc in INCLUDES:
+        passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [OUTPUT, inc]) & "\n"
 
     if dynlib.len() != 0:
         let win = "when defined(Windows):\n"
@@ -293,6 +288,9 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
         
         if outlib != "":
             extflags &= " --dynlib:dynlib$#" % OUTPUT
+    else:
+        passC &= "const header$# = \"$#\"\n" % [OUTPUT, fl]
+        extflags = "--header:header$#" % OUTPUT
 
     # Run c2nim on generated file
     var cmd = "c2nim $# $# --out:$# $#" % [flags, extflags, outfile, cfile]
@@ -300,9 +298,9 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
         cmd = "cmd /c " & cmd  
     discard execProc(cmd)
 
-    if preproc:
+    if preproc or ctag:
         try:
-            removeFile("temp.c")
+            removeFile(cfile)
         except:
             discard
 
@@ -324,7 +322,6 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
     # Add header file and include paths
     if passC != "":
         prepend(outfile, passC)
-        append(outfile, "\n{.pop.}\n{.pop.}\n")
 
     # Add dynamic library         
     if outlib != "":
@@ -399,9 +396,6 @@ proc runcfg(cfg: string) =
             var flags = "--stdcall"
             var ppflags = ""
 
-            # Save C files in case they have changed
-            savefile(sfile)
-
             for act in CONFIG[file].keys():
                 if CONFIG[file][act] == "true":
                     if act == "recurse":
@@ -420,7 +414,7 @@ proc runcfg(cfg: string) =
                     ppflags = CONFIG[file][act]
 
             if not noprocess:
-                c2nim(file, getnimout(file), flags, ppflags, recurse, preproc, ctag, define, compile, dynlib)
+                c2nim(file, getnimout(file), flags, ppflags, recurse, preproc, ctag, define, dynlib, compile)
         
 # ###
 # Main loop
@@ -431,5 +425,3 @@ if paramCount() == 0:
 
 for i in 1..paramCount():
     runcfg(paramStr(i))
-
-savefiles()
