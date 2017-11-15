@@ -13,6 +13,7 @@ var DONE: seq[string] = @[]
 
 var CONFIG: Config
 var FILTER = ""
+var QUOTES = true
 var OUTPUT = ""
 var INCLUDES: seq[string] = @[]
 var EXCLUDES: seq[string] = @[]
@@ -165,9 +166,9 @@ proc getincls(file: string): seq[string] =
     result = @[]
     withFile(file):
         for f in content.findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
-            var inc = f.captures[0].replace(re"""[<>"]""", "").strip()
-            if FILTER in inc and (not exclude(inc)):
-                result.add(inc)
+            var inc = f.captures[0].strip()
+            if ((QUOTES and inc.contains("\"")) or (FILTER != "" and FILTER in inc)) and (not exclude(inc)):
+                result.add(inc.replace(re"""[<>"]""", "").strip())
 
         result = result.deduplicate()
 
@@ -266,18 +267,20 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
     for inc in INCLUDES:
         passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [OUTPUT, inc]) & "\n"
 
+    let fname = file.splitFile().name
     if dynlib.len() != 0:
         let win = "when defined(Windows):\n"
         let lin = "when defined(Linux):\n"
         let osx = "when defined(MacOSX):\n"
         var winlib, linlib, osxlib: string = ""
         for dl in dynlib:
+            let lib = "  const dynlib$# = \"$#\"\n" % [fname, dl]
             if dl.splitFile().ext == ".dll":
-                winlib &= "  const dynlib$# = \"$#\"\n" % [OUTPUT, dl]
+                winlib &= lib
             if dl.splitFile().ext == ".so":
-                linlib &= "  const dynlib$# = \"$#\"\n" % [OUTPUT, dl]
+                linlib &= lib
             if dl.splitFile().ext == ".dylib":
-                osxlib &= "  const dynlib$# = \"$#\"\n" % [OUTPUT, dl]
+                osxlib &= lib
 
         if winlib != "":
             outlib &= win & winlib & "\n"
@@ -287,10 +290,10 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
             outlib &= osx & osxlib & "\n"
         
         if outlib != "":
-            extflags &= " --dynlib:dynlib$#" % OUTPUT
+            extflags &= " --dynlib:dynlib$#" % fname
     else:
-        passC &= "const header$# = \"$#\"\n" % [OUTPUT, fl]
-        extflags = "--header:header$#" % OUTPUT
+        passC &= "const header$# = \"$#\"\n" % [fname, fl]
+        extflags = "--header:header$#" % fname
 
     # Run c2nim on generated file
     var cmd = "c2nim $# $# --out:$# $#" % [flags, extflags, outfile, cfile]
@@ -342,7 +345,10 @@ proc runcfg(cfg: string) =
             OUTPUT = CONFIG["n.global"]["output"]
         if CONFIG["n.global"].hasKey("filter"):
             FILTER = CONFIG["n.global"]["filter"]
-
+        if CONFIG["n.global"].hasKey("quotes"):
+            if CONFIG["n.global"]["quotes"] == "false":
+                QUOTES = false
+    
     if CONFIG.hasKey("n.include"):
         for inc in CONFIG["n.include"].keys():
             INCLUDES.add(inc)
@@ -364,6 +370,7 @@ proc runcfg(cfg: string) =
         for act in CONFIG[file].keys():
             action = act.replace(re"\..*", "")
             if action == "create":
+                createDir(file.splitPath().head)
                 writeFile(file, CONFIG[file][act])
             elif action in @["prepend", "append", "replace", "compile", "dynlib"] and sfile != "":
                 if action == "prepend":

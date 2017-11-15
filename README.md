@@ -40,6 +40,8 @@ _[n.global]_
 
 output = name of the Nimble project once installed, also location to place generated .nim files
 
+quotes = pick up any headers included using "" (and not <> which is typically used for standard headers) [default: true]
+
 filter = string to identify and recurse into library .h files in #include statements and exclude standard headers
 
 _[n.include]_
