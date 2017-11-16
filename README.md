@@ -38,11 +38,11 @@ __Config file__
 
 _[n.global]_
 
-output = name of the Nimble project once installed, also location to place generated .nim files
+```output``` = name of the Nimble project once installed, also location to place generated .nim files
 
-quotes = pick up any headers included using "" (and not <> which is typically used for standard headers) [default: true]
+```quotes``` = pick up any headers included using "" (and not <> which is typically used for standard headers) [default: true]
 
-filter = string to identify and recurse into library .h files in #include statements and exclude standard headers
+```filter``` = string to identify and recurse into library .h files in #include statements and exclude standard headers
 
 _[n.include]_
 
@@ -56,9 +56,23 @@ _[n.exclude]_
 
 List of all directories or files to exclude from all parsing. If an entry here matches any portion of a file, it is excluded from recursive processing.
 
+_[n.prepare]_
+
+The following keys can be used to prepare dependencies such as downloading ZIP files, cloning Git repositories, etc. Multiple entries are possible by appending any .string to the key. E.g. download.file1. -win, -lin and -osx can be used for OS specific tasks. E.g. download-win
+
+```download``` = url to download to the output directory. ZIP files are automatically extracted. Files are not redownloaded if already present but re-extracted
+
+```git``` = url of Git repository to clone. Full repo is pulled so gitremote + gitsparse is preferable. Resets to HEAD if already present
+
+```gitremote``` = url of Git repository to partially checkout. Use with gitsparse to pull only files and dirs of interest
+
+```gitsparse``` = list of files and/or dirs to include in partial checkout, one per line. Resets to HEAD if already present
+
+```execute``` = command to run during preparation
+
 _[sourcefile]_
 
-The following keys apply to library source code and help with generating the .nim files.
+The following keys apply to library source code and help with generating the .nim files. -win, -lin and -osx can be used for OS specific tasks. E.g. dynlib-win
 
 ```recurse``` = find #include files and process them [default: false]
 

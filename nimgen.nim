@@ -1,3 +1,4 @@
+import docopt
 import nre
 import os
 import ospaths
@@ -17,6 +18,18 @@ var QUOTES = true
 var OUTPUT = ""
 var INCLUDES: seq[string] = @[]
 var EXCLUDES: seq[string] = @[]
+
+const DOC = """
+Nimgen is a helper for c2nim to simpilfy and automate the wrapping of C libraries
+
+Usage:
+  nimgen [options] <file.cfg>...
+
+Options:
+  -f    delete all artifacts and regenerate
+"""
+
+let ARGS = docopt(DOC)
 
 # ###
 # Helpers
@@ -38,7 +51,88 @@ proc execProc(cmd: string): string =
         echo "Command failed: " & $x
         echo cmd
         echo result
-        quit()
+        quit(1)
+
+proc extractZip(zipfile: string) =
+    var cmd = "unzip $#"
+    if defined(Windows):
+        cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
+
+    setCurrentDir(OUTPUT)
+    defer: setCurrentDir("..")
+
+    echo "Extracting " & zipfile
+    discard execProc(cmd % zipfile)
+
+proc downloadUrl(url: string) =
+    let file = url.extractFilename()
+    let ext = file.splitFile().ext.toLowerAscii()
+
+    var cmd = "curl $# -o $#"
+    if defined(Windows):
+        cmd = "powershell wget $# -OutFile $#"
+
+    if not (ext == ".zip" and fileExists(OUTPUT/file)):
+        echo "Downloading " & file
+        createDir(OUTPUT)
+        discard execProc(cmd % [url, OUTPUT/file])
+
+    if ext == ".zip":
+        extractZip(file)
+
+proc gitReset() =
+    echo "Resetting Git repo"
+
+    setCurrentDir(OUTPUT)
+    defer: setCurrentDir("..")
+
+    discard execProc("git reset --hard HEAD")
+
+proc gitRemotePull(url: string, pull=true) =
+    if dirExists(OUTPUT):
+        if pull:
+            gitReset()
+        return
+
+    createDir(OUTPUT)
+    setCurrentDir(OUTPUT)
+    defer: setCurrentDir("..")
+
+    echo "Setting up Git repo"
+    discard execProc("git init .")
+    discard execProc("git remote add origin " & url)
+
+    if pull:
+        echo "Checking out artifacts"
+        discard execProc("git pull --depth=1 origin master")
+
+proc gitSparseCheckout(plist: string) =
+    let sparsefile = ".git/info/sparse-checkout"
+    if fileExists(OUTPUT/sparsefile):
+        gitReset()
+        return
+
+    setCurrentDir(OUTPUT)
+    defer: setCurrentDir("..")
+    
+    discard execProc("git config core.sparsecheckout true")
+    writeFile(sparsefile, plist)
+
+    echo "Checking out artifacts"
+    discard execProc("git pull --depth=1 origin master")
+
+proc getKey(ukey: string): tuple[key: string, val: bool] =
+    var kv = ukey.replace(re"\..*", "").split("-", 1)
+    if kv.len() == 1:
+        kv.add("")
+
+    if (kv[1] == "") or
+        (kv[1] == "win" and defined(Windows)) or
+        (kv[1] == "lin" and defined(Linux)) or
+        (kv[1] == "osx" and defined(MacOSX)):
+        return (kv[0], true)
+
+    return (kv[0], false)
 
 # ###
 # File loction
@@ -72,7 +166,7 @@ proc search(file: string): string =
                 break
         if not found:
             echo "File doesn't exist: " & file
-            quit()
+            quit(1)
 
     return result.replace(re"[\\/]", $DirSep)
         
@@ -275,18 +369,19 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
         var winlib, linlib, osxlib: string = ""
         for dl in dynlib:
             let lib = "  const dynlib$# = \"$#\"\n" % [fname, dl]
-            if dl.splitFile().ext == ".dll":
+            let ext = dl.splitFile().ext
+            if ext == ".dll":
                 winlib &= lib
-            if dl.splitFile().ext == ".so":
+            elif ext == ".so":
                 linlib &= lib
-            if dl.splitFile().ext == ".dylib":
+            elif ext == ".dylib":
                 osxlib &= lib
 
         if winlib != "":
             outlib &= win & winlib & "\n"
         if linlib != "":
             outlib &= lin & linlib & "\n"
-        if winlib != "":
+        if osxlib != "":
             outlib &= osx & osxlib & "\n"
         
         if outlib != "":
@@ -336,13 +431,17 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
 proc runcfg(cfg: string) =
     if not fileExists(cfg):
         echo "Config doesn't exist: " & cfg
-        quit()
+        quit(1)
 
     CONFIG = loadConfig(cfg)
 
     if CONFIG.hasKey("n.global"):
         if CONFIG["n.global"].hasKey("output"):
             OUTPUT = CONFIG["n.global"]["output"]
+
+            if ARGS["-f"]:
+                removeDir(OUTPUT)
+
         if CONFIG["n.global"].hasKey("filter"):
             FILTER = CONFIG["n.global"]["filter"]
         if CONFIG["n.global"].hasKey("quotes"):
@@ -357,42 +456,57 @@ proc runcfg(cfg: string) =
         for excl in CONFIG["n.exclude"].keys():
             EXCLUDES.add(excl)
 
+    if CONFIG.hasKey("n.prepare"):
+        for prep in CONFIG["n.prepare"].keys():
+            let (key, val) = getKey(prep)
+            if val == true:
+                if key == "download":
+                    downloadUrl(CONFIG["n.prepare"][prep])
+                elif key == "git":
+                    gitRemotePull(CONFIG["n.prepare"][prep])
+                elif key == "gitremote":
+                    gitRemotePull(CONFIG["n.prepare"][prep], false)
+                elif key == "gitsparse":
+                    gitSparseCheckout(CONFIG["n.prepare"][prep])
+                elif key == "execute":
+                    discard execProc(CONFIG["n.prepare"][prep])
+
     for file in CONFIG.keys():
-        if file in @["n.global", "n.include", "n.exclude"]:
+        if file in @["n.global", "n.include", "n.exclude", "n.prepare"]:
             continue
 
         var sfile = search(file)
 
         var srch = ""
-        var action = ""
         var compile: seq[string] = @[]
         var dynlib: seq[string] = @[]
         for act in CONFIG[file].keys():
-            action = act.replace(re"\..*", "")
-            if action == "create":
-                createDir(file.splitPath().head)
-                writeFile(file, CONFIG[file][act])
-            elif action in @["prepend", "append", "replace", "compile", "dynlib"] and sfile != "":
-                if action == "prepend":
-                    if srch != "":
-                        prepend(sfile, CONFIG[file][act], CONFIG[file][srch])
-                    else:
-                        prepend(sfile, CONFIG[file][act])
-                elif action == "append":
-                    if srch != "":
-                        append(sfile, CONFIG[file][act], CONFIG[file][srch])
-                    else:
-                        append(sfile, CONFIG[file][act])
-                elif action == "replace":
-                    if srch != "":
-                        freplace(sfile, CONFIG[file][srch], CONFIG[file][act])
-                elif action == "compile":
-                    compile.add(CONFIG[file][act])
-                elif action == "dynlib":
-                    dynlib.add(CONFIG[file][act])
-                srch = ""
-            elif action == "search":
-                srch = act
+            let (action, val) = getKey(act)
+            if val == true:
+                if action == "create":
+                    createDir(file.splitPath().head)
+                    writeFile(file, CONFIG[file][act])
+                elif action in @["prepend", "append", "replace", "compile", "dynlib"] and sfile != "":
+                    if action == "prepend":
+                        if srch != "":
+                            prepend(sfile, CONFIG[file][act], CONFIG[file][srch])
+                        else:
+                            prepend(sfile, CONFIG[file][act])
+                    elif action == "append":
+                        if srch != "":
+                            append(sfile, CONFIG[file][act], CONFIG[file][srch])
+                        else:
+                            append(sfile, CONFIG[file][act])
+                    elif action == "replace":
+                        if srch != "":
+                            freplace(sfile, CONFIG[file][srch], CONFIG[file][act])
+                    elif action == "compile":
+                        compile.add(CONFIG[file][act])
+                    elif action == "dynlib":
+                        dynlib.add(CONFIG[file][act])
+                    srch = ""
+                elif action == "search":
+                    srch = act
         
         if file.splitFile().ext != ".nim":
             var recurse = false
@@ -426,9 +540,5 @@ proc runcfg(cfg: string) =
 # ###
 # Main loop
 
-if paramCount() == 0:
-    echo "nimgen file.cfg"
-    quit()
-
-for i in 1..paramCount():
-    runcfg(paramStr(i))
+for i in ARGS["<file.cfg>"]:
+    runcfg(i)
