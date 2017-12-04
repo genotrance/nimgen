@@ -1,8 +1,8 @@
 # Package
 
-version       = "0.1.1"
+version       = "0.1.2"
 author        = "genotrance"
-description   = "c2nim helper to simpilfy and automate the wrapping of C libraries"
+description   = "c2nim helper to simplify and automate the wrapping of C libraries"
 license       = "MIT"
 
 skipDirs = @["tests"]

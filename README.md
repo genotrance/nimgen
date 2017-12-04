@@ -94,9 +94,9 @@ Multiple entries for the all following keys are possible by appending any .strin
 
 ```dynlib``` = dynamic library to load at runtime for generated .nim procs
 
-The following keys apply to library source code (before processing) and generated .nim files (after processing) and allow manipulating the files as required to enable successful wrapping.
+The following keys apply to library source code (before processing) and generated .nim files (after processing) and allow manipulating the files as required to enable successful wrapping. They are not propagated to #include files when ```recurse = true```.
 
-```create``` = create a file at exact location with contents specified
+```create``` = create a file at exact location with contents specified. File needs to be in the _[n.exclude]_ list in order to be created.
 
 ```search``` = search string providing context for following prepend/append/replace directives
 
@@ -105,6 +105,12 @@ The following keys apply to library source code (before processing) and generate
 ```append``` = string value to append into file at the end or after search
 
 ```replace``` = string value to replace search string in file
+
+_[n.wildcard]_
+
+File wildcards such as *.nim, ssl*.h, etc. can be used to perform tasks across a group of files. This is useful to define common operations such as global text replacements without having to specify an explicit section for every single file. These operations will be performed on every matching file that is defined as a _sourcefile_ or recursed files.
+
+```wildcard``` = pattern to match against. All keys following the wildcard declaration will apply to matched files
 
 __Feedback__
 

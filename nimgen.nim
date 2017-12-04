@@ -18,6 +18,7 @@ var QUOTES = true
 var OUTPUT = ""
 var INCLUDES: seq[string] = @[]
 var EXCLUDES: seq[string] = @[]
+var WILDCARDS = newConfig()
 
 const DOC = """
 Nimgen is a helper for c2nim to simpilfy and automate the wrapping of C libraries
@@ -137,7 +138,7 @@ proc getKey(ukey: string): tuple[key: string, val: bool] =
 # ###
 # File loction
 
-proc getnimout(file: string): string =
+proc getNimout(file: string): string =
     var nimout = file.splitFile().name.replace(re"[\-\.]", "_") & ".nim"
     if OUTPUT != "":
         nimout = OUTPUT/nimout
@@ -156,7 +157,7 @@ proc search(file: string): string =
 
     result = file
     if file.splitFile().ext == ".nim":
-        result = getnimout(file)
+        result = getNimout(file)
     elif not fileExists(result):
         var found = false
         for inc in INCLUDES:
@@ -246,7 +247,7 @@ proc compile(dir="", file=""): string =
 
     return data
 
-proc fixfuncprotos(file: string) =
+proc fixFuncProtos(file: string) =
     withFile(file):
         for fp in content.findIter(re"(?m)(^.*?)[ ]*\(\*(.*?)\((.*?)\)\)[ \r\n]*\((.*?[\r\n]*.*?)\);"):
             var tdout = "typedef $# (*type_$#)($#);\n" % [fp.captures[0], fp.captures[1], fp.captures[3]] &
@@ -256,7 +257,7 @@ proc fixfuncprotos(file: string) =
 # ###
 # Convert to Nim
 
-proc getincls(file: string): seq[string] =
+proc getIncls(file: string): seq[string] =
     result = @[]
     withFile(file):
         for f in content.findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
@@ -266,13 +267,13 @@ proc getincls(file: string): seq[string] =
 
         result = result.deduplicate()
 
-proc getdefines(file: string): string =
+proc getDefines(file: string): string =
     withFile(file):
         result = ""
         for def in content.findIter(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d.x]+)(?:\r|//|/*).*?$"):
             result &= def.captures[0] & "\n"
 
-proc preprocess(file, ppflags, flags: string): string =
+proc runPreprocess(file, ppflags, flags: string): string =
     var pproc = "gcc"
     if flags.contains("cpp"):
         pproc = "g++"
@@ -297,14 +298,15 @@ proc preprocess(file, ppflags, flags: string): string =
                 if start:
                     rdata.add(
                         line.replace("_Noreturn", "")
+                            .replace("(())", "")
                             .replace("WINAPI", "")
                             .replace("__attribute__", "")
                             .replace(re"\(\([_a-z]+?\)\)", "")
-                            .replace(re"\(\(__format__\(__printf__, \d, \d\)\)\);", ";") & "\n"
+                            .replace(re"\(\(__format__[\s]*\(__[gnu_]*printf__, [\d]+, [\d]+\)\)\);", ";") & "\n"
                     )
     return $rdata
 
-proc ctags(file: string): string =
+proc runCtags(file: string): string =
     var cmd = "ctags -o - --fields=+S+K --c-kinds=p --file-scope=no " & file
     var fps = execProc(cmd)
 
@@ -321,8 +323,10 @@ proc ctags(file: string): string =
                     fdata &= fn & "\n"
 
     return fdata
-    
-proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: bool, dynlib, compile: seq[string] = @[]) =
+
+proc runFile(file: string, cfgin: OrderedTableRef)
+        
+proc c2nim(fl, outfile, flags, ppflags: string, recurse, preprocess, ctags, defines: bool, dynlib, compile: seq[string] = @[]) =
     var file = search(fl)
     if file == "":
         return
@@ -333,25 +337,34 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
     echo "Processing " & file
     DONE.add(file)
 
-    fixfuncprotos(file)
+    fixFuncProtos(file)
 
     var incout = ""
     if recurse:
-        var incls = getincls(file)
+        var incls = getIncls(file)
         for inc in incls:
             incout &= "import " & inc.splitFile().name.replace(re"[\-\.]", "_") & "\n"
-            c2nim(inc, getnimout(inc), flags, ppflags, recurse, preproc, ctag, define, dynlib)
+            var cfg = newOrderedTable[string, string]()
+            if flags != "": cfg["flags"] = flags
+            if ppflags != "": cfg["ppflags"] = ppflags
+            if recurse: cfg["recurse"] = $recurse
+            if preprocess: cfg["preprocess"] = $preprocess
+            if ctags: cfg["ctags"] = $ctags
+            if defines: cfg["defines"] = $defines
+            for i in dynlib:
+                cfg["dynlib." & i] = i
+            runFile(inc, cfg)
 
     var cfile = file
-    if preproc:
+    if preprocess:
         cfile = "temp-$#.c" % [outfile.extractFilename()]
-        writeFile(cfile, preprocess(file, ppflags, flags))
-    elif ctag:
+        writeFile(cfile, runPreprocess(file, ppflags, flags))
+    elif ctags:
         cfile = "temp-$#.c" % [outfile.extractFilename()]
-        writeFile(cfile, ctags(file))
+        writeFile(cfile, runCtags(file))
 
-    if define and (preproc or ctag):
-        prepend(cfile, getdefines(file))
+    if defines and (preprocess or ctags):
+        prepend(cfile, getDefines(file))
 
     var extflags = ""
     var passC = ""
@@ -361,7 +374,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
     for inc in INCLUDES:
         passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [OUTPUT, inc]) & "\n"
 
-    let fname = file.splitFile().name
+    let fname = file.splitFile().name.replace(re"[\.\-]", "_")
     if dynlib.len() != 0:
         let win = "when defined(Windows):\n"
         let lin = "when defined(Linux):\n"
@@ -396,7 +409,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
         cmd = "cmd /c " & cmd  
     discard execProc(cmd)
 
-    if preproc or ctag:
+    if preprocess or ctags:
         try:
             removeFile(cfile)
         except:
@@ -428,7 +441,78 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preproc, ctag, define: 
 # ###
 # Processor
 
-proc runcfg(cfg: string) =
+proc runFile(file: string, cfgin: OrderedTableRef) =
+    var cfg = cfgin
+    var sfile = search(file)
+    
+    for pattern in WILDCARDS.keys():
+        let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
+        if file.find(re(pat)).isSome():
+            echo "Appending " & file & " " & pattern
+            for key in WILDCARDS[pattern].keys():
+                cfg[key & "." & pattern] = WILDCARDS[pattern][key]
+
+    var srch = ""
+    var compile: seq[string] = @[]
+    var dynlib: seq[string] = @[]
+    for act in cfg.keys():
+        let (action, val) = getKey(act)
+        if val == true:
+            if action == "create":
+                createDir(file.splitPath().head)
+                writeFile(file, cfg[act])
+            elif action in @["prepend", "append", "replace", "compile", "dynlib"] and sfile != "":
+                if action == "prepend":
+                    if srch != "":
+                        prepend(sfile, cfg[act], cfg[srch])
+                    else:
+                        prepend(sfile, cfg[act])
+                elif action == "append":
+                    if srch != "":
+                        append(sfile, cfg[act], cfg[srch])
+                    else:
+                        append(sfile, cfg[act])
+                elif action == "replace":
+                    if srch != "":
+                        freplace(sfile, cfg[srch], cfg[act])
+                elif action == "compile":
+                    compile.add(cfg[act])
+                elif action == "dynlib":
+                    dynlib.add(cfg[act])
+                srch = ""
+            elif action == "search":
+                srch = act
+    
+    if file.splitFile().ext != ".nim":
+        var recurse = false
+        var preprocess = false
+        var ctags = false
+        var defines = false
+        var noprocess = false
+        var flags = "--stdcall"
+        var ppflags = ""
+
+        for act in cfg.keys():
+            if cfg[act] == "true":
+                if act == "recurse":
+                    recurse = true
+                elif act == "preprocess":
+                    preprocess = true
+                elif act == "ctags":
+                    ctags = true
+                elif act == "defines":
+                    defines = true
+                elif act == "noprocess":
+                    noprocess = true
+            elif act == "flags":
+                flags = cfg[act]
+            elif act == "ppflags":
+                ppflags = cfg[act]
+
+        if not noprocess:
+            c2nim(file, getNimout(file), flags, ppflags, recurse, preprocess, ctags, defines, dynlib, compile)
+    
+proc runCfg(cfg: string) =
     if not fileExists(cfg):
         echo "Config doesn't exist: " & cfg
         quit(1)
@@ -441,6 +525,9 @@ proc runcfg(cfg: string) =
 
             if ARGS["-f"]:
                 removeDir(OUTPUT)
+            else:
+                for f in walkFiles(OUTPUT/"*.nim"):
+                    removeFile(f)
 
         if CONFIG["n.global"].hasKey("filter"):
             FILTER = CONFIG["n.global"]["filter"]
@@ -471,74 +558,24 @@ proc runcfg(cfg: string) =
                 elif key == "execute":
                     discard execProc(CONFIG["n.prepare"][prep])
 
+    if CONFIG.hasKey("n.wildcard"):
+        var wildcard = ""
+        for wild in CONFIG["n.wildcard"].keys():
+            let (key, val) = getKey(wild)
+            if val == true:
+                if key == "wildcard":
+                    wildcard = CONFIG["n.wildcard"][key]
+                else:
+                    WILDCARDS.setSectionKey(wildcard, key, CONFIG["n.wildcard"][key])
+
     for file in CONFIG.keys():
-        if file in @["n.global", "n.include", "n.exclude", "n.prepare"]:
+        if file in @["n.global", "n.include", "n.exclude", "n.prepare", "n.wildcard"]:
             continue
 
-        var sfile = search(file)
+        runFile(file, CONFIG[file])
 
-        var srch = ""
-        var compile: seq[string] = @[]
-        var dynlib: seq[string] = @[]
-        for act in CONFIG[file].keys():
-            let (action, val) = getKey(act)
-            if val == true:
-                if action == "create":
-                    createDir(file.splitPath().head)
-                    writeFile(file, CONFIG[file][act])
-                elif action in @["prepend", "append", "replace", "compile", "dynlib"] and sfile != "":
-                    if action == "prepend":
-                        if srch != "":
-                            prepend(sfile, CONFIG[file][act], CONFIG[file][srch])
-                        else:
-                            prepend(sfile, CONFIG[file][act])
-                    elif action == "append":
-                        if srch != "":
-                            append(sfile, CONFIG[file][act], CONFIG[file][srch])
-                        else:
-                            append(sfile, CONFIG[file][act])
-                    elif action == "replace":
-                        if srch != "":
-                            freplace(sfile, CONFIG[file][srch], CONFIG[file][act])
-                    elif action == "compile":
-                        compile.add(CONFIG[file][act])
-                    elif action == "dynlib":
-                        dynlib.add(CONFIG[file][act])
-                    srch = ""
-                elif action == "search":
-                    srch = act
-        
-        if file.splitFile().ext != ".nim":
-            var recurse = false
-            var preproc = false
-            var ctag = false
-            var define = false
-            var noprocess = false
-            var flags = "--stdcall"
-            var ppflags = ""
-
-            for act in CONFIG[file].keys():
-                if CONFIG[file][act] == "true":
-                    if act == "recurse":
-                        recurse = true
-                    elif act == "preprocess":
-                        preproc = true
-                    elif act == "ctags":
-                        ctag = true
-                    elif act == "defines":
-                        define = true
-                    elif act == "noprocess":
-                        noprocess = true
-                elif act == "flags":
-                    flags = CONFIG[file][act]
-                elif act == "ppflags":
-                    ppflags = CONFIG[file][act]
-
-            if not noprocess:
-                c2nim(file, getnimout(file), flags, ppflags, recurse, preproc, ctag, define, dynlib, compile)
-        
 # ###
 # Main loop
 
 for i in ARGS["<file.cfg>"]:
-    runcfg(i)
+    runCfg(i)
