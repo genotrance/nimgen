@@ -70,6 +70,12 @@ The following keys can be used to prepare dependencies such as downloading ZIP f
 
 ```execute``` = command to run during preparation
 
+_[n.wildcard]_
+
+File wildcards such as *.nim, ssl*.h, etc. can be used to perform tasks across a group of files. This is useful to define common operations such as global text replacements without having to specify an explicit section for every single file. These operations will be performed on every matching file that is defined as a _sourcefile_ or recursed files. Only applies on source files following the wildcard declarations.
+
+```wildcard``` = pattern to match against. All keys following the wildcard declaration will apply to matched files
+
 _[sourcefile]_
 
 The following keys apply to library source code and help with generating the .nim files. -win, -lin and -osx can be used for OS specific tasks. E.g. dynlib-win
@@ -105,12 +111,6 @@ The following keys apply to library source code (before processing) and generate
 ```append``` = string value to append into file at the end or after search
 
 ```replace``` = string value to replace search string in file
-
-_[n.wildcard]_
-
-File wildcards such as *.nim, ssl*.h, etc. can be used to perform tasks across a group of files. This is useful to define common operations such as global text replacements without having to specify an explicit section for every single file. These operations will be performed on every matching file that is defined as a _sourcefile_ or recursed files.
-
-```wildcard``` = pattern to match against. All keys following the wildcard declaration will apply to matched files
 
 __Feedback__
 
