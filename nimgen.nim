@@ -55,7 +55,7 @@ proc execProc(cmd: string): string =
         quit(1)
 
 proc extractZip(zipfile: string) =
-    var cmd = "unzip $#"
+    var cmd = "unzip -o $#"
     if defined(Windows):
         cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
 
