@@ -30,7 +30,16 @@ __Capabilities & Limitations__
 
 Nimgen supports compiling in C/C++ sources as well as loading in dynamic libraries at this time. Support for static libraries (.a, .lib) are still to come.
 
-To see examples of nimgen in action, the [nimssl](https://github.com/genotrance/nimssl) library is a good example of C code getting compiled in whereas [nimbass](https://github.com/genotrance/nimbass) is an example of linking with a dynamic library.
+To see examples of nimgen in action check out the following wrappers:-
+* [nimbass](https://github.com/genotrance/nimbass) - BASS audio wrapper
+    * download ZIP with headers and binary
+    * link with a dynamic library
+* [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper
+    * git checkout
+    * Compile C code into binary
+* [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper 
+    * git sparse checkout
+    * Compile C code into binary
 
 Nimgen only supports the ```gcc``` preprocessor at this time. Support for detecting and using other preprocessors is TBD.
 
