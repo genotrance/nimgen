@@ -6,7 +6,7 @@ __Installation__
 
 Nimgen can be installed via [Nimble](https://github.com/nim-lang/nimble):
 
-```> nimble install https://github.com/genotrance/nimgen```
+```> nimble install nimgen```
 
 This will download, build and install nimgen in the standard Nimble package location, typically ~/.nimble. Once installed, it can be run just like c2nim.
 
@@ -40,6 +40,9 @@ To see examples of nimgen in action check out the following wrappers:-
 * [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper 
     * git sparse checkout
     * Compile C code into binary
+* [nimssh2](https://github.com/genotrance/nimssh2) - libssh2 wrapper
+    * git sparse checkout
+    * Compile libssh2 in as static binary
 
 Nimgen only supports the ```gcc``` preprocessor at this time. Support for detecting and using other preprocessors is TBD.
 
@@ -87,7 +90,7 @@ File wildcards such as *.nim, ssl*.h, etc. can be used to perform tasks across a
 
 _[sourcefile]_
 
-The following keys apply to library source code and help with generating the .nim files. -win, -lin and -osx can be used for OS specific tasks. E.g. dynlib-win
+The following keys apply to library source code and help with generating the .nim files. -win, -lin and -osx can be used for OS specific tasks. E.g. dynlib-win, pragma-win
 
 ```recurse``` = find #include files and process them [default: false]
 
@@ -106,6 +109,8 @@ The following keys apply to library source code and help with generating the .ni
 Multiple entries for the all following keys are possible by appending any .string to the key. E.g. dynlib.win, compile.dir
 
 ```compile``` = file or dir of files of source code to {.compile.} into generated .nim
+
+```pragma``` = pragmas to define in generated .nim file. E.g. pragma = "passL: \"-lssl\"" => {.passL: "-lssl".}
 
 ```dynlib``` = dynamic library to load at runtime for generated .nim procs
 

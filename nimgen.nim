@@ -326,7 +326,7 @@ proc runCtags(file: string): string =
 
 proc runFile(file: string, cfgin: OrderedTableRef)
         
-proc c2nim(fl, outfile, flags, ppflags: string, recurse, preprocess, ctags, defines: bool, dynlib, compile: seq[string] = @[]) =
+proc c2nim(fl, outfile, flags, ppflags: string, recurse, preprocess, ctags, defines: bool, dynlib, compile, pragma: seq[string] = @[]) =
     var file = search(fl)
     if file == "":
         return
@@ -369,10 +369,14 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preprocess, ctags, defi
     var extflags = ""
     var passC = ""
     var outlib = ""
+    var outpragma = ""
 
     passC = "import strutils\n"
     for inc in INCLUDES:
         passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [OUTPUT, inc]) & "\n"
+
+    for prag in pragma:
+        outpragma &= "{." & prag & ".}\n"
 
     let fname = file.splitFile().name.replace(re"[\.\-]", "_")
     if dynlib.len() != 0:
@@ -430,6 +434,10 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preprocess, ctags, defi
         else:
             prepend(outfile, compile(dir=cpl))
 
+    # Add any pragmas
+    if outpragma != "":
+        prepend(outfile, outpragma)
+
     # Add header file and include paths
     if passC != "":
         prepend(outfile, passC)
@@ -455,13 +463,14 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
     var srch = ""
     var compile: seq[string] = @[]
     var dynlib: seq[string] = @[]
+    var pragma: seq[string] = @[]
     for act in cfg.keys():
         let (action, val) = getKey(act)
         if val == true:
             if action == "create":
                 createDir(file.splitPath().head)
                 writeFile(file, cfg[act])
-            elif action in @["prepend", "append", "replace", "compile", "dynlib"] and sfile != "":
+            elif action in @["prepend", "append", "replace", "compile", "dynlib", "pragma"] and sfile != "":
                 if action == "prepend":
                     if srch != "":
                         prepend(sfile, cfg[act], cfg[srch])
@@ -479,6 +488,8 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
                     compile.add(cfg[act])
                 elif action == "dynlib":
                     dynlib.add(cfg[act])
+                elif action == "pragma":
+                    pragma.add(cfg[act])
                 srch = ""
             elif action == "search":
                 srch = act
@@ -510,7 +521,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
                 ppflags = cfg[act]
 
         if not noprocess:
-            c2nim(file, getNimout(file), flags, ppflags, recurse, preprocess, ctags, defines, dynlib, compile)
+            c2nim(file, getNimout(file), flags, ppflags, recurse, preprocess, ctags, defines, dynlib, compile, pragma)
     
 proc runCfg(cfg: string) =
     if not fileExists(cfg):
