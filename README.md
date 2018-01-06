@@ -1,4 +1,4 @@
-Nimgen is a helper for [c2nim](https://github.com/nim-lang/c2nim/) to simpilfy and automate the wrapping of C libraries.
+Nimgen is a helper for [c2nim](https://github.com/nim-lang/c2nim/) to simplify and automate the wrapping of C libraries.
 
 Nimgen can be used to automate the process of manipulating C files so that c2nim can be run on them without issues. This includes adding/removing code snippets, removal of complex preprocessor definitions that c2nim doesn't yet comprehend and recursively running on #include files.
 
