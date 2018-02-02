@@ -11,6 +11,7 @@ import strutils
 import tables
 
 var DONE: seq[string] = @[]
+var DONE_INLINE: seq[string] = @[]
 
 var CONFIG: Config
 var FILTER = ""
@@ -75,7 +76,6 @@ proc downloadUrl(url: string) =
 
     if not (ext == ".zip" and fileExists(OUTPUT/file)):
         echo "Downloading " & file
-        createDir(OUTPUT)
         discard execProc(cmd % [url, OUTPUT/file])
 
     if ext == ".zip":
@@ -95,7 +95,6 @@ proc gitRemotePull(url: string, pull=true) =
             gitReset()
         return
 
-    createDir(OUTPUT)
     setCurrentDir(OUTPUT)
     defer: setCurrentDir("..")
 
@@ -257,8 +256,11 @@ proc fixFuncProtos(file: string) =
 # ###
 # Convert to Nim
 
-proc getIncls(file: string): seq[string] =
+proc getIncls(file: string, inline=false): seq[string] =
     result = @[]
+    if inline and file in DONE_INLINE:
+        return
+
     withFile(file):
         for f in content.findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
             var inc = f.captures[0].strip()
@@ -266,14 +268,35 @@ proc getIncls(file: string): seq[string] =
                 result.add(inc.replace(re"""[<>"]""", "").strip())
 
         result = result.deduplicate()
+    
+    DONE_INLINE.add(file)
+    
+    if inline:
+        var sres = newSeq[string]()
+        for incl in result:
+            let sincl = search(incl)
+            if sincl == "":
+                continue
+        
+            sres.add(getIncls(sincl, inline))
+        result.add(sres)
 
-proc getDefines(file: string): string =
+    result = result.deduplicate()
+    
+proc getDefines(file: string, inline=false): string =
+    result = ""
+    if inline:
+        var incls = getIncls(file, inline)
+        for incl in incls:
+            let sincl = search(incl)
+            if sincl != "":
+                echo "Inlining " & sincl
+                result &= getDefines(sincl)
     withFile(file):
-        result = ""
-        for def in content.findIter(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d.x]+)(?:\r|//|/*).*?$"):
+        for def in content.findIter(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d\-.xf]+)(?:\r|//|/*).*?$"):
             result &= def.captures[0] & "\n"
 
-proc runPreprocess(file, ppflags, flags: string): string =
+proc runPreprocess(file, ppflags, flags: string, inline: bool): string =
     var pproc = "gcc"
     if flags.contains("cpp"):
         pproc = "g++"
@@ -287,7 +310,9 @@ proc runPreprocess(file, ppflags, flags: string): string =
     # Include content only from file
     var rdata: Rope
     var start = false
-    let sfile = file.replace("\\", "/")
+    var sfile = file.replace("\\", "/")
+    if inline:
+        sfile = sfile.parentDir()
     for line in data.splitLines():
         if line.strip() != "":
             if line[0] == '#' and not line.contains("#pragma"):
@@ -301,6 +326,7 @@ proc runPreprocess(file, ppflags, flags: string): string =
                             .replace("(())", "")
                             .replace("WINAPI", "")
                             .replace("__attribute__", "")
+                            .replace("extern \"C\"", "")
                             .replace(re"\(\([_a-z]+?\)\)", "")
                             .replace(re"\(\(__format__[\s]*\(__[gnu_]*printf__, [\d]+, [\d]+\)\)\);", ";") & "\n"
                     )
@@ -326,7 +352,7 @@ proc runCtags(file: string): string =
 
 proc runFile(file: string, cfgin: OrderedTableRef)
         
-proc c2nim(fl, outfile, flags, ppflags: string, recurse, preprocess, ctags, defines: bool, dynlib, compile, pragma: seq[string] = @[]) =
+proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, ctags, defines: bool, dynlib, compile, pragma: seq[string] = @[]) =
     var file = search(fl)
     if file == "":
         return
@@ -358,13 +384,13 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, preprocess, ctags, defi
     var cfile = file
     if preprocess:
         cfile = "temp-$#.c" % [outfile.extractFilename()]
-        writeFile(cfile, runPreprocess(file, ppflags, flags))
+        writeFile(cfile, runPreprocess(file, ppflags, flags, inline))
     elif ctags:
         cfile = "temp-$#.c" % [outfile.extractFilename()]
         writeFile(cfile, runCtags(file))
 
     if defines and (preprocess or ctags):
-        prepend(cfile, getDefines(file))
+        prepend(cfile, getDefines(file, inline))
 
     var extflags = ""
     var passC = ""
@@ -496,6 +522,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
     
     if file.splitFile().ext != ".nim":
         var recurse = false
+        var inline = false
         var preprocess = false
         var ctags = false
         var defines = false
@@ -507,6 +534,8 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
             if cfg[act] == "true":
                 if act == "recurse":
                     recurse = true
+                elif act == "inline":
+                    inline = true
                 elif act == "preprocess":
                     preprocess = true
                 elif act == "ctags":
@@ -520,8 +549,12 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
             elif act == "ppflags":
                 ppflags = cfg[act]
 
+        if recurse and inline:
+            echo "Cannot use recurse and inline simultaneously"
+            quit(1)
+
         if not noprocess:
-            c2nim(file, getNimout(file), flags, ppflags, recurse, preprocess, ctags, defines, dynlib, compile, pragma)
+            c2nim(file, getNimout(file), flags, ppflags, recurse, inline, preprocess, ctags, defines, dynlib, compile, pragma)
     
 proc runCfg(cfg: string) =
     if not fileExists(cfg):
@@ -533,12 +566,21 @@ proc runCfg(cfg: string) =
     if CONFIG.hasKey("n.global"):
         if CONFIG["n.global"].hasKey("output"):
             OUTPUT = CONFIG["n.global"]["output"]
-
-            if ARGS["-f"]:
-                removeDir(OUTPUT)
-            else:
-                for f in walkFiles(OUTPUT/"*.nim"):
-                    removeFile(f)
+            if dirExists(OUTPUT):
+                if ARGS["-f"]:
+                    try:
+                        removeDir(OUTPUT)
+                    except OSError:
+                        echo "Directory in use: " & OUTPUT
+                        quit(1)
+                else:
+                    for f in walkFiles(OUTPUT/"*.nim"):
+                        try:
+                            removeFile(f)
+                        except OSError:
+                            echo "Unable to delete: " & f
+                            quit(1)
+            createDir(OUTPUT)
 
         if CONFIG["n.global"].hasKey("filter"):
             FILTER = CONFIG["n.global"]["filter"]
@@ -560,6 +602,8 @@ proc runCfg(cfg: string) =
             if val == true:
                 if key == "download":
                     downloadUrl(CONFIG["n.prepare"][prep])
+                elif key == "extract":
+                    extractZip(CONFIG["n.prepare"][prep])
                 elif key == "git":
                     gitRemotePull(CONFIG["n.prepare"][prep])
                 elif key == "gitremote":

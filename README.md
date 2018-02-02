@@ -74,6 +74,8 @@ The following keys can be used to prepare dependencies such as downloading ZIP f
 
 ```download``` = url to download to the output directory. ZIP files are automatically extracted. Files are not redownloaded if already present but re-extracted
 
+```extract``` = ZIP file to extract in case they are local and don't need to be downloaded. Path is relative to output directory.
+
 ```git``` = url of Git repository to clone. Full repo is pulled so gitremote + gitsparse is preferable. Resets to HEAD if already present
 
 ```gitremote``` = url of Git repository to partially checkout. Use with gitsparse to pull only files and dirs of interest
@@ -93,6 +95,8 @@ _[sourcefile]_
 The following keys apply to library source code and help with generating the .nim files. -win, -lin and -osx can be used for OS specific tasks. E.g. dynlib-win, pragma-win
 
 ```recurse``` = find #include files and process them [default: false]
+
+```inline``` = include #include files into file being processed, alternative method to processing each header file separately with recurse. Multiple source files will get combined into the same .nim output files [default: false]
 
 ```preprocess``` = run preprocessor (gcc -E) on file to remove #defines, etc. [default: false] - this is especially useful when c2nim doesn't support complex preprocessor usage
 
