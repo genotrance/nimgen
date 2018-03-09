@@ -37,9 +37,11 @@ To see examples of nimgen in action check out the following wrappers:-
 
 * Compile C code into binary
     * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper
-        * git checkout
+        * download header file
     * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper
         * git sparse checkout
+    * [nimrax](https://github.com/genotrance/nimrax) - Radix tree wrapper
+        * git checkout
     * [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper
         * git sparse checkout
     * [libsvm](https://github.com/genotrance/libsvm) - libsvm wrapper
