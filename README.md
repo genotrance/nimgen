@@ -12,7 +12,7 @@ This will download, build and install nimgen in the standard Nimble package loca
 
 __Usage__
 
-Nimgen is driven by a simple .cfg file that is read using the Nim [parsecfg](https://nim-lang.org/docs/parsecfg.html) module. The sections of the file are described further below. 
+Nimgen is driven by a simple .cfg file that is read using the Nim [parsecfg](https://nim-lang.org/docs/parsecfg.html) module. The sections of the file are described further below.
 
 ```> nimgen package.cfg```
 
@@ -31,20 +31,25 @@ __Capabilities & Limitations__
 Nimgen supports compiling in C/C++ sources as well as loading in dynamic libraries at this time. Support for static libraries (.a, .lib) are still to come.
 
 To see examples of nimgen in action check out the following wrappers:-
-* [nimbass](https://github.com/genotrance/nimbass) - BASS audio wrapper
-    * download ZIP with headers and binary
-    * link with a dynamic library
-* [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper
-    * git checkout
-    * Compile C code into binary
-* [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper 
-    * git sparse checkout
-    * Compile C code into binary
-* [nimssh2](https://github.com/genotrance/nimssh2) - libssh2 wrapper
-    * git sparse checkout
-    * Compile libssh2 in as static binary
+* Link with a dynamic library
+    * [nimbass](https://github.com/genotrance/nimbass) - BASS audio wrapper
+        * download ZIP with headers and binary
 
-Nimgen only supports the ```gcc``` preprocessor at this time. Support for detecting and using other preprocessors is TBD.
+* Compile C code into binary
+    * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper
+        * git checkout
+    * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper
+        * git sparse checkout
+    * [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper
+        * git sparse checkout
+    * [libsvm](https://github.com/genotrance/libsvm) - libsvm wrapper
+        * git sparse checkout
+
+* Compile in as static binary
+    * [nimssh2](https://github.com/genotrance/nimssh2) - libssh2 wrapper
+        * git sparse checkout
+
+Nimgen only supports the ```gcc``` preprocessor at this time. Support for detecting and using other preprocessors will be based on interest.
 
 __Config file__
 
@@ -129,6 +134,8 @@ The following keys apply to library source code (before processing) and generate
 ```append``` = string value to append into file at the end or after search
 
 ```replace``` = string value to replace search string in file
+
+```comment``` = number of lines to comment from search location
 
 __Feedback__
 

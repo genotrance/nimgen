@@ -1,4 +1,3 @@
-import docopt
 import nre
 import os
 import ospaths
@@ -30,8 +29,6 @@ Usage:
 Options:
   -f    delete all artifacts and regenerate
 """
-
-let ARGS = docopt(DOC)
 
 # ###
 # Helpers
@@ -90,7 +87,7 @@ proc gitReset() =
     discard execProc("git reset --hard HEAD")
 
 proc gitRemotePull(url: string, pull=true) =
-    if dirExists(OUTPUT):
+    if dirExists(OUTPUT/".git"):
         if pull:
             gitReset()
         return
@@ -114,7 +111,7 @@ proc gitSparseCheckout(plist: string) =
 
     setCurrentDir(OUTPUT)
     defer: setCurrentDir("..")
-    
+
     discard execProc("git config core.sparsecheckout true")
     writeFile(sparsefile, plist)
 
@@ -157,11 +154,11 @@ proc search(file: string): string =
     result = file
     if file.splitFile().ext == ".nim":
         result = getNimout(file)
-    elif not fileExists(result):
+    elif not fileExists(result) and not dirExists(result):
         var found = false
         for inc in INCLUDES:
             result = inc/file
-            if fileExists(result):
+            if fileExists(result) or dirExists(result):
                 found = true
                 break
         if not found:
@@ -169,7 +166,7 @@ proc search(file: string): string =
             quit(1)
 
     return result.replace(re"[\\/]", $DirSep)
-        
+
 # ###
 # Loading / unloading
 
@@ -217,7 +214,7 @@ proc append(file: string, data: string, search="") =
             let idy = idx + search.len()
             if idx != -1:
                 content = content[0..<idy] & data & content[idy..<content.len()]
-    
+
 proc freplace(file: string, pattern: string, repl="") =
     withFile(file):
         if pattern in content:
@@ -232,15 +229,36 @@ proc freplace(file: string, pattern: Regex, repl="") =
             else:
                 content = content.replace(pattern, repl)
 
+proc comment(file: string, pattern: string, numlines: string) =
+    let ext = file.splitFile().ext.toLowerAscii()
+    let cmtchar = if ext == ".nim": "#" else: "//"
+    withFile(file):
+        var idx = content.find(pattern)
+        var num = 0
+        try:
+            num = numlines.parseInt()
+        except ValueError:
+            echo "Bad comment value, should be integer: " & numlines
+        if idx != -1:
+            for i in 0 .. num-1:
+                if idx >= content.len():
+                    break
+                content = content[0..<idx] & cmtchar & content[idx..<content.len()]
+                while idx < content.len():
+                    idx += 1
+                    if content[idx] == '\L':
+                        idx += 1
+                        break
+
 proc compile(dir="", file=""): string =
     proc fcompile(file: string): string =
         return "{.compile: \"$#\".}" % file.replace("\\", "/")
-    
+
     var data = ""
     if dir != "" and dirExists(dir):
         for f in walkFiles(dir / "*.c"):
             data &= fcompile(f) & "\n"
-    
+
     if file != "" and fileExists(file):
         data &= fcompile(file) & "\n"
 
@@ -252,7 +270,7 @@ proc fixFuncProtos(file: string) =
             var tdout = "typedef $# (*type_$#)($#);\n" % [fp.captures[0], fp.captures[1], fp.captures[3]] &
                 "type_$# $#($#);" % [fp.captures[1], fp.captures[1], fp.captures[2]]
             content = content.replace(fp.match, tdout)
-        
+
 # ###
 # Convert to Nim
 
@@ -268,21 +286,21 @@ proc getIncls(file: string, inline=false): seq[string] =
                 result.add(inc.replace(re"""[<>"]""", "").strip())
 
         result = result.deduplicate()
-    
+
     DONE_INLINE.add(file)
-    
+
     if inline:
         var sres = newSeq[string]()
         for incl in result:
             let sincl = search(incl)
             if sincl == "":
                 continue
-        
+
             sres.add(getIncls(sincl, inline))
         result.add(sres)
 
     result = result.deduplicate()
-    
+
 proc getDefines(file: string, inline=false): string =
     result = ""
     if inline:
@@ -351,12 +369,12 @@ proc runCtags(file: string): string =
     return fdata
 
 proc runFile(file: string, cfgin: OrderedTableRef)
-        
+
 proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, ctags, defines: bool, dynlib, compile, pragma: seq[string] = @[]) =
     var file = search(fl)
     if file == "":
         return
-    
+
     if file in DONE:
         return
 
@@ -426,7 +444,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
             outlib &= lin & linlib & "\n"
         if osxlib != "":
             outlib &= osx & osxlib & "\n"
-        
+
         if outlib != "":
             extflags &= " --dynlib:dynlib$#" % fname
     else:
@@ -436,7 +454,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
     # Run c2nim on generated file
     var cmd = "c2nim $# $# --out:$# $#" % [flags, extflags, outfile, cfile]
     when defined(windows):
-        cmd = "cmd /c " & cmd  
+        cmd = "cmd /c " & cmd
     discard execProc(cmd)
 
     if preprocess or ctags:
@@ -455,10 +473,11 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
 
     # Include {.compile.} directives
     for cpl in compile:
-        if getFileInfo(cpl).kind == pcFile:
-            prepend(outfile, compile(file=cpl))
+        let fcpl = search(cpl)
+        if getFileInfo(fcpl).kind == pcFile:
+            prepend(outfile, compile(file=fcpl))
         else:
-            prepend(outfile, compile(dir=cpl))
+            prepend(outfile, compile(dir=fcpl))
 
     # Add any pragmas
     if outpragma != "":
@@ -468,7 +487,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
     if passC != "":
         prepend(outfile, passC)
 
-    # Add dynamic library         
+    # Add dynamic library
     if outlib != "":
         prepend(outfile, outlib)
 
@@ -478,7 +497,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
 proc runFile(file: string, cfgin: OrderedTableRef) =
     var cfg = cfgin
     var sfile = search(file)
-    
+
     for pattern in WILDCARDS.keys():
         let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
         if file.find(re(pat)).isSome():
@@ -496,7 +515,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
             if action == "create":
                 createDir(file.splitPath().head)
                 writeFile(file, cfg[act])
-            elif action in @["prepend", "append", "replace", "compile", "dynlib", "pragma"] and sfile != "":
+            elif action in @["prepend", "append", "replace", "comment", "compile", "dynlib", "pragma"] and sfile != "":
                 if action == "prepend":
                     if srch != "":
                         prepend(sfile, cfg[act], cfg[srch])
@@ -510,6 +529,9 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
                 elif action == "replace":
                     if srch != "":
                         freplace(sfile, cfg[srch], cfg[act])
+                elif action == "comment":
+                    if srch != "":
+                        comment(sfile, cfg[srch], cfg[act])
                 elif action == "compile":
                     compile.add(cfg[act])
                 elif action == "dynlib":
@@ -519,7 +541,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
                 srch = ""
             elif action == "search":
                 srch = act
-    
+
     if file.splitFile().ext != ".nim":
         var recurse = false
         var inline = false
@@ -555,7 +577,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
 
         if not noprocess:
             c2nim(file, getNimout(file), flags, ppflags, recurse, inline, preprocess, ctags, defines, dynlib, compile, pragma)
-    
+
 proc runCfg(cfg: string) =
     if not fileExists(cfg):
         echo "Config doesn't exist: " & cfg
@@ -567,7 +589,7 @@ proc runCfg(cfg: string) =
         if CONFIG["n.global"].hasKey("output"):
             OUTPUT = CONFIG["n.global"]["output"]
             if dirExists(OUTPUT):
-                if ARGS["-f"]:
+                if "-f" in commandLineParams():
                     try:
                         removeDir(OUTPUT)
                     except OSError:
@@ -587,7 +609,7 @@ proc runCfg(cfg: string) =
         if CONFIG["n.global"].hasKey("quotes"):
             if CONFIG["n.global"]["quotes"] == "false":
                 QUOTES = false
-    
+
     if CONFIG.hasKey("n.include"):
         for inc in CONFIG["n.include"].keys():
             INCLUDES.add(inc)
@@ -632,5 +654,6 @@ proc runCfg(cfg: string) =
 # ###
 # Main loop
 
-for i in ARGS["<file.cfg>"]:
-    runCfg(i)
+for i in commandLineParams():
+    if i != "-f":
+        runCfg(i)
