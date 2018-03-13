@@ -36,6 +36,8 @@ To see examples of nimgen in action check out the following wrappers:-
         * download ZIP with headers and binary
 
 * Compile C code into binary
+    * [nimbigwig](https://github.com/genotrance/nimbigwig) - libbigWig wrapper
+        * git checkout
     * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper
         * download header file
     * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper

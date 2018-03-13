@@ -283,7 +283,8 @@ proc getIncls(file: string, inline=false): seq[string] =
         for f in content.findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
             var inc = f.captures[0].strip()
             if ((QUOTES and inc.contains("\"")) or (FILTER != "" and FILTER in inc)) and (not exclude(inc)):
-                result.add(inc.replace(re"""[<>"]""", "").strip())
+                result.add(
+                    inc.replace(re"""[<>"]""", "").replace(re"\/[\*\/].*$", "").strip())
 
         result = result.deduplicate()
 
@@ -336,6 +337,8 @@ proc runPreprocess(file, ppflags, flags: string, inline: bool): string =
             if line[0] == '#' and not line.contains("#pragma"):
                 start = false
                 if sfile in line.replace("\\", "/").replace("//", "/"):
+                    start = true
+                if not ("\\" in line) and not ("/" in line) and extractFilename(sfile) in line:
                     start = true
             else:
                 if start:
@@ -641,9 +644,9 @@ proc runCfg(cfg: string) =
             let (key, val) = getKey(wild)
             if val == true:
                 if key == "wildcard":
-                    wildcard = CONFIG["n.wildcard"][key]
+                    wildcard = CONFIG["n.wildcard"][wild]
                 else:
-                    WILDCARDS.setSectionKey(wildcard, key, CONFIG["n.wildcard"][key])
+                    WILDCARDS.setSectionKey(wildcard, wild, CONFIG["n.wildcard"][wild])
 
     for file in CONFIG.keys():
         if file in @["n.global", "n.include", "n.exclude", "n.prepare", "n.wildcard"]:
