@@ -1,4 +1,5 @@
 nimcache
 nimgen
+web
 *.exe
 *.swp
