@@ -32,25 +32,25 @@ Nimgen supports compiling in C/C++ sources as well as loading in dynamic librari
 
 To see examples of nimgen in action check out the following wrappers:-
 * Link with a dynamic library
-    * [nimbass](https://github.com/genotrance/nimbass) - BASS audio wrapper
+    * [nimbass](https://github.com/genotrance/nimbass) - BASS audio wrapper: [docs](http://nimgen.genotrance.com/nimbass)
         * download ZIP with headers and binary
 
 * Compile C code into binary
-    * [nimbigwig](https://github.com/genotrance/nimbigwig) - libbigWig wrapper
+    * [nimbigwig](https://github.com/genotrance/nimbigwig) - libbigWig wrapper: [docs](http://nimgen.genotrance.com/nimbigwig)
         * git checkout
-    * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper
+    * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper: [docs](http://nimgen.genotrance.com/nimfuzz)
         * download header file
-    * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper
+    * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper: [docs](http://nimgen.genotrance.com/nimkerberos)
         * git sparse checkout
-    * [nimrax](https://github.com/genotrance/nimrax) - Radix tree wrapper
+    * [nimrax](https://github.com/genotrance/nimrax) - Radix tree wrapper: [docs](http://nimgen.genotrance.com/nimrax)
         * git checkout
-    * [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper
+    * [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper: [docs](http://nimgen.genotrance.com/nimssl)
         * git sparse checkout
-    * [libsvm](https://github.com/genotrance/libsvm) - libsvm wrapper
+    * [libsvm](https://github.com/genotrance/libsvm) - libsvm wrapper: [docs](http://nimgen.genotrance.com/libsvm)
         * git sparse checkout
 
 * Compile in as static binary
-    * [nimssh2](https://github.com/genotrance/nimssh2) - libssh2 wrapper
+    * [nimssh2](https://github.com/genotrance/nimssh2) - libssh2 wrapper: [docs](http://nimgen.genotrance.com/nimssh2)
         * git sparse checkout
 
 Nimgen only supports the ```gcc``` preprocessor at this time. Support for detecting and using other preprocessors will be based on interest.
