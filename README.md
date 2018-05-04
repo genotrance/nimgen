@@ -34,6 +34,8 @@ To see examples of nimgen in action check out the following wrappers:-
 * Link with a dynamic library
     * [nimbass](https://github.com/genotrance/nimbass) - BASS audio wrapper: [docs](http://nimgen.genotrance.com/nimbass)
         * download ZIP with headers and binary
+    * [nimlibxlsxwriter](https://github.com/KeepCoolWithCoolidge/nimlibxlsxwriter) - libxlsxwriter wrapper
+        * git checkout
 
 * Compile C code into binary
     * [nimbigwig](https://github.com/genotrance/nimbigwig) - libbigWig wrapper: [docs](http://nimgen.genotrance.com/nimbigwig)
