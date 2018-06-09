@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.5"
+version       = "0.2.0"
 author        = "genotrance"
 description   = "c2nim helper to simplify and automate the wrapping of C libraries"
 license       = "MIT"

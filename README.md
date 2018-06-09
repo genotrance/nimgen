@@ -38,6 +38,10 @@ To see examples of nimgen in action check out the following wrappers:-
         * git checkout
 
 * Compile C code into binary
+    * [nim7z](https://github.com/genotrance/nim7z) - 7z decoder wrapper: [docs](http://nimgen.genotrance.com/nim7z)
+        * git sparse checkout
+    * [nimarchive](https://github.com/genotrance/nimarchive) - libarchive wrapper: [docs](http://nimgen.genotrance.com/nimarchive)
+        * git sparse checkout
     * [nimbigwig](https://github.com/genotrance/nimbigwig) - libbigWig wrapper: [docs](http://nimgen.genotrance.com/nimbigwig)
         * git checkout
     * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper: [docs](http://nimgen.genotrance.com/nimfuzz)
@@ -142,6 +146,16 @@ The following keys apply to library source code (before processing) and generate
 ```replace``` = string value to replace search string in file
 
 ```comment``` = number of lines to comment from search location
+
+The following key only applies before processing and allows renaming the generated .nim files as required to enable successful wrapping. This may be for organizational purposes or to prevent usage of non-nim supported strings in module names (E.g. first letter is a number). Destination is relative to output directory if defined.
+
+```rename``` = string value to rename generated filename. E.g. rename = "$replace(7=s7)"
+
+  `/` = create a directory/module hierarchy
+
+  `$nimout` = refer to the original filename
+
+  `$replace(srch1=repl1, srch2=reply2)` = rename specific portions in `$nimout`
 
 __Feedback__
 

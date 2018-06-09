@@ -3,6 +3,7 @@ import os
 import ospaths
 import osproc
 import parsecfg
+import pegs
 import ropes
 import sequtils
 import streams
@@ -18,6 +19,7 @@ var QUOTES = true
 var OUTPUT = ""
 var INCLUDES: seq[string] = @[]
 var EXCLUDES: seq[string] = @[]
+var RENAMES = initTable[string, string]()
 var WILDCARDS = newConfig()
 
 const DOC = """
@@ -134,12 +136,19 @@ proc getKey(ukey: string): tuple[key: string, val: bool] =
 # ###
 # File loction
 
-proc getNimout(file: string): string =
-    var nimout = file.splitFile().name.replace(re"[\-\.]", "_") & ".nim"
+proc getNimout(file: string, rename=true): string =
+    result = file.splitFile().name.replace(re"[\-\.]", "_") & ".nim"
     if OUTPUT != "":
-        nimout = OUTPUT/nimout
+        result = OUTPUT/result
 
-    return nimout
+    if not rename:
+        return
+
+    if RENAMES.hasKey(file):
+        result = RENAMES[file]
+
+    if not dirExists(parentDir(result)):
+        createDir(parentDir(result))
 
 proc exclude(file: string): bool =
     for excl in EXCLUDES:
@@ -249,6 +258,32 @@ proc comment(file: string, pattern: string, numlines: string) =
                     if content[idx] == '\L':
                         idx += 1
                         break
+
+proc rename(file: string, renfile: string) =
+    if file.splitFile().ext == ".nim":
+        return
+
+    var
+        nimout = getNimout(file, false)
+        newname = renfile.replace("$nimout", extractFilename(nimout))
+
+    #if newname =~ peg"(!\$.)*{'$replace'\s*'('\s*{(!\,\S)+}\s*','\s*{(!\)\S)+}\s*')'}":
+    if newname =~ peg"(!\$.)*{'$replace'\s*'('\s*{(!\)\S)+}')'}":
+        var final = nimout.extractFilename()
+        for entry in matches[1].split(","):
+            let spl = entry.split("=")
+            if spl.len() != 2:
+                echo "Bad replace syntax: " & renfile
+                quit(1)
+
+            var
+                srch = spl[0].strip()
+                repl = spl[1].strip()
+
+            final = final.replace(srch, repl)
+        newname = newname.replace(matches[0], final)
+
+    RENAMES[file] = OUTPUT/newname
 
 proc compile(dir="", file=""): string =
     proc fcompile(file: string): string =
@@ -381,7 +416,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
     if file in DONE:
         return
 
-    echo "Processing " & file
+    echo "Processing $# => $#" % [file, outfile]
     DONE.add(file)
 
     fixFuncProtos(file)
@@ -390,7 +425,6 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
     if recurse:
         var incls = getIncls(file)
         for inc in incls:
-            incout &= "import " & inc.splitFile().name.replace(re"[\-\.]", "_") & "\n"
             var cfg = newOrderedTable[string, string]()
             if flags != "": cfg["flags"] = flags
             if ppflags != "": cfg["ppflags"] = ppflags
@@ -401,6 +435,8 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
             for i in dynlib:
                 cfg["dynlib." & i] = i
             runFile(inc, cfg)
+
+            incout &= "import $#\n" % inc.search().getNimout()[0 .. ^5] #inc.splitFile().name.replace(re"[\-\.]", "_") & "\n"
 
     var cfile = file
     if preprocess:
@@ -518,7 +554,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
             if action == "create":
                 createDir(file.splitPath().head)
                 writeFile(file, cfg[act])
-            elif action in @["prepend", "append", "replace", "comment", "compile", "dynlib", "pragma"] and sfile != "":
+            elif action in @["prepend", "append", "replace", "comment", "rename", "compile", "dynlib", "pragma"] and sfile != "":
                 if action == "prepend":
                     if srch != "":
                         prepend(sfile, cfg[act], cfg[srch])
@@ -535,6 +571,8 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
                 elif action == "comment":
                     if srch != "":
                         comment(sfile, cfg[srch], cfg[act])
+                elif action == "rename":
+                    rename(sfile, cfg[act])
                 elif action == "compile":
                     compile.add(cfg[act])
                 elif action == "dynlib":
@@ -579,7 +617,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
             quit(1)
 
         if not noprocess:
-            c2nim(file, getNimout(file), flags, ppflags, recurse, inline, preprocess, ctags, defines, dynlib, compile, pragma)
+            c2nim(file, getNimout(sfile), flags, ppflags, recurse, inline, preprocess, ctags, defines, dynlib, compile, pragma)
 
 proc runCfg(cfg: string) =
     if not fileExists(cfg):
