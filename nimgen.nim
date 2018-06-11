@@ -13,6 +13,12 @@ var
   gRenames = initTable[string, string]()
   gWildcards = newConfig()
 
+type
+  c2nimConfigObj = object
+    flags, ppflags: string
+    recurse, inline, preprocess, ctags, defines: bool
+    dynlib, compile, pragma: seq[string]
+
 const DOC = """
 Nimgen is a helper for c2nim to simpilfy and automate the wrapping of C libraries
 
@@ -422,7 +428,7 @@ proc runCtags(file: string): string =
 
 proc runFile(file: string, cfgin: OrderedTableRef)
 
-proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, ctags, defines: bool, dynlib, compile, pragma: seq[string] = @[]) =
+proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   var file = search(fl)
   if file == "":
     return
@@ -436,32 +442,34 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
   fixFuncProtos(file)
 
   var incout = ""
-  if recurse:
-    var incls = getIncls(file)
-    for inc in incls:
-      var cfg = newOrderedTable[string, string]()
-      if flags != "": cfg["flags"] = flags
-      if ppflags != "": cfg["ppflags"] = ppflags
-      if recurse: cfg["recurse"] = $recurse
-      if preprocess: cfg["preprocess"] = $preprocess
-      if ctags: cfg["ctags"] = $ctags
-      if defines: cfg["defines"] = $defines
-      for i in dynlib:
-        cfg["dynlib." & i] = i
-      runFile(inc, cfg)
+  if c2nimConfig.recurse:
+    var
+      incls = getIncls(file)
+      cfg = newOrderedTable[string, string]()
 
-      incout &= "import $#\n" % inc.search().getNimout()[0 .. ^5] #inc.splitFile().name.replace(re"[\-\.]", "_") & "\n"
+    for name, value in c2nimConfig.fieldPairs:
+      when value is string:
+        cfg[name] = value
+      when value is bool:
+        cfg[name] = $value
+
+    for i in c2nimConfig.dynlib:
+      cfg["dynlib." & i] = i
+
+    for inc in incls:
+      runFile(inc, cfg)
+      incout &= "import $#\n" % inc.search().getNimout()[0 .. ^5]
 
   var cfile = file
-  if preprocess:
+  if c2nimConfig.preprocess:
     cfile = "temp-$#.c" % [outfile.extractFilename()]
-    writeFile(cfile, runPreprocess(file, ppflags, flags, inline))
-  elif ctags:
+    writeFile(cfile, runPreprocess(file, c2nimConfig.ppflags, c2nimConfig.flags, c2nimConfig.inline))
+  elif c2nimConfig.ctags:
     cfile = "temp-$#.c" % [outfile.extractFilename()]
     writeFile(cfile, runCtags(file))
 
-  if defines and (preprocess or ctags):
-    prepend(cfile, getDefines(file, inline))
+  if c2nimConfig.defines and (c2nimConfig.preprocess or c2nimConfig.ctags):
+    prepend(cfile, getDefines(file, c2nimConfig.inline))
 
   var
     extflags = ""
@@ -473,18 +481,18 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
   for inc in gIncludes:
     passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [gOutput, inc]) & "\n"
 
-  for prag in pragma:
+  for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
 
   let fname = file.splitFile().name.replace(re"[\.\-]", "_")
-  if dynlib.len() != 0:
+  if c2nimConfig.dynlib.len() != 0:
     let
       win = "when defined(Windows):\n"
       lin = "when defined(Linux):\n"
       osx = "when defined(MacOSX):\n"
 
     var winlib, linlib, osxlib: string = ""
-    for dl in dynlib:
+    for dl in c2nimConfig.dynlib:
       let
         lib = "  const dynlib$# = \"$#\"\n" % [fname, dl]
         ext = dl.splitFile().ext
@@ -510,19 +518,19 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
     extflags = "--header:header$#" % fname
 
   # Run c2nim on generated file
-  var cmd = "c2nim $# $# --out:$# $#" % [flags, extflags, outfile, cfile]
+  var cmd = "c2nim $# $# --out:$# $# --nep1" % [c2nimConfig.flags, extflags, outfile, cfile]
   when defined(windows):
     cmd = "cmd /c " & cmd
   discard execProc(cmd)
 
-  if preprocess or ctags:
+  if c2nimConfig.preprocess or c2nimConfig.ctags:
     try:
       removeFile(cfile)
     except:
       discard
 
   # Import nim modules
-  if recurse:
+  if c2nimConfig.recurse:
     prepend(outfile, incout)
 
   # Nim doesn't like {.cdecl.} for type proc()
@@ -530,7 +538,7 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
   freplace(outfile, " {.cdecl.})", ")")
 
   # Include {.compile.} directives
-  for cpl in compile:
+  for cpl in c2nimConfig.compile:
     let fcpl = search(cpl)
     if getFileInfo(fcpl).kind == pcFile:
       prepend(outfile, compile(file=fcpl))
@@ -566,9 +574,12 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
 
   var
     srch = ""
-    compile: seq[string] = @[]
-    dynlib: seq[string] = @[]
-    pragma: seq[string] = @[]
+
+    c2nimConfig = c2nimConfigObj(
+      flags: "--stdcall", ppflags: "",
+      recurse: false, inline: false, preprocess: false, ctags: false, defines: false,
+      dynlib: @[], compile: @[], pragma: @[]
+    )
 
   for act in cfg.keys():
     let (action, val) = getKey(act)
@@ -596,51 +607,43 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
         elif action == "rename":
           rename(sfile, cfg[act])
         elif action == "compile":
-          compile.add(cfg[act])
+          c2nimConfig.compile.add(cfg[act])
         elif action == "dynlib":
-          dynlib.add(cfg[act])
+          c2nimConfig.dynlib.add(cfg[act])
         elif action == "pragma":
-          pragma.add(cfg[act])
+          c2nimConfig.pragma.add(cfg[act])
         srch = ""
       elif action == "search":
         srch = act
 
   if file.splitFile().ext != ".nim":
-    var
-      recurse = false
-      inline = false
-      preprocess = false
-      ctags = false
-      defines = false
-      noprocess = false
-      flags = "--stdcall"
-      ppflags = ""
+    var noprocess = false
 
     for act in cfg.keys():
       if cfg[act] == "true":
         if act == "recurse":
-          recurse = true
+          c2nimConfig.recurse = true
         elif act == "inline":
-          inline = true
+          c2nimConfig.inline = true
         elif act == "preprocess":
-          preprocess = true
+          c2nimConfig.preprocess = true
         elif act == "ctags":
-          ctags = true
+          c2nimConfig.ctags = true
         elif act == "defines":
-          defines = true
+          c2nimConfig.defines = true
         elif act == "noprocess":
           noprocess = true
       elif act == "flags":
-        flags = cfg[act]
+        c2nimConfig.flags = cfg[act]
       elif act == "ppflags":
-        ppflags = cfg[act]
+        c2nimConfig.ppflags = cfg[act]
 
-    if recurse and inline:
+    if c2nimConfig.recurse and c2nimConfig.inline:
       echo "Cannot use recurse and inline simultaneously"
       quit(1)
 
     if not noprocess:
-      c2nim(file, getNimout(sfile), flags, ppflags, recurse, inline, preprocess, ctags, defines, dynlib, compile, pragma)
+      c2nim(file, getNimout(sfile), c2nimConfig)
 
 proc runCfg(cfg: string) =
   if not fileExists(cfg):
