@@ -48,6 +48,8 @@ To see examples of nimgen in action check out the following wrappers:-
         * download header file
     * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper: [docs](http://nimgen.genotrance.com/nimkerberos)
         * git sparse checkout
+    * [nimpcre](https://github.com/genotrance/nimpcre) - PCRE wrapper: [docs](http://nimgen.genotrance.com/nimpcre)
+        * git checkout
     * [nimrax](https://github.com/genotrance/nimrax) - Radix tree wrapper: [docs](http://nimgen.genotrance.com/nimrax)
         * git checkout
     * [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper: [docs](http://nimgen.genotrance.com/nimssl)
