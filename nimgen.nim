@@ -518,7 +518,7 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     extflags = "--header:header$#" % fname
 
   # Run c2nim on generated file
-  var cmd = "c2nim $# $# --out:$# $# --nep1" % [c2nimConfig.flags, extflags, outfile, cfile]
+  var cmd = "c2nim $# $# --out:$# $#" % [c2nimConfig.flags, extflags, outfile, cfile]
   when defined(windows):
     cmd = "cmd /c " & cmd
   discard execProc(cmd)
