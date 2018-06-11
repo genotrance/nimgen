@@ -1,17 +1,17 @@
 import nre, os, ospaths, osproc, parsecfg, pegs, ropes, sequtils, streams, strutils, tables
 
 var
-  DONE: seq[string] = @[]
-  DONE_INLINE: seq[string] = @[]
+  gDoneRecursive: seq[string] = @[]
+  gDoneInline: seq[string] = @[]
 
-  CONFIG: Config
-  FILTER = ""
-  QUOTES = true
-  OUTPUT = ""
-  INCLUDES: seq[string] = @[]
-  EXCLUDES: seq[string] = @[]
-  RENAMES = initTable[string, string]()
-  WILDCARDS = newConfig()
+  gConfig: Config
+  gFilter = ""
+  gQuotes = true
+  gOutput = ""
+  gIncludes: seq[string] = @[]
+  gExcludes: seq[string] = @[]
+  gRenames = initTable[string, string]()
+  gWildcards = newConfig()
 
 const DOC = """
 Nimgen is a helper for c2nim to simpilfy and automate the wrapping of C libraries
@@ -52,7 +52,7 @@ proc extractZip(zipfile: string) =
   if defined(Windows):
     cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
 
-  setCurrentDir(OUTPUT)
+  setCurrentDir(gOutput)
   defer: setCurrentDir("..")
 
   echo "Extracting " & zipfile
@@ -67,9 +67,9 @@ proc downloadUrl(url: string) =
   if defined(Windows):
     cmd = "powershell wget $# -OutFile $#"
 
-  if not (ext == ".zip" and fileExists(OUTPUT/file)):
+  if not (ext == ".zip" and fileExists(gOutput/file)):
     echo "Downloading " & file
-    discard execProc(cmd % [url, OUTPUT/file])
+    discard execProc(cmd % [url, gOutput/file])
 
   if ext == ".zip":
     extractZip(file)
@@ -77,18 +77,18 @@ proc downloadUrl(url: string) =
 proc gitReset() =
   echo "Resetting Git repo"
 
-  setCurrentDir(OUTPUT)
+  setCurrentDir(gOutput)
   defer: setCurrentDir("..")
 
   discard execProc("git reset --hard HEAD")
 
 proc gitRemotePull(url: string, pull=true) =
-  if dirExists(OUTPUT/".git"):
+  if dirExists(gOutput/".git"):
     if pull:
       gitReset()
     return
 
-  setCurrentDir(OUTPUT)
+  setCurrentDir(gOutput)
   defer: setCurrentDir("..")
 
   echo "Setting up Git repo"
@@ -101,11 +101,11 @@ proc gitRemotePull(url: string, pull=true) =
 
 proc gitSparseCheckout(plist: string) =
   let sparsefile = ".git/info/sparse-checkout"
-  if fileExists(OUTPUT/sparsefile):
+  if fileExists(gOutput/sparsefile):
     gitReset()
     return
 
-  setCurrentDir(OUTPUT)
+  setCurrentDir(gOutput)
   defer: setCurrentDir("..")
 
   discard execProc("git config core.sparsecheckout true")
@@ -113,6 +113,20 @@ proc gitSparseCheckout(plist: string) =
 
   echo "Checking out artifacts"
   discard execProc("git pull --depth=1 origin master")
+
+proc doCopy(flist: string) =
+  for pair in flist.split(","):
+    let spl = pair.split("=")
+    if spl.len() != 2:
+      echo "Bad copy syntax: " & flist
+      quit(1)
+
+    let
+      lfile = spl[0].strip()
+      rfile = spl[1].strip()
+
+    copyFile(lfile, rfile)
+    echo "Copied $# to $#" % [lfile, rfile]
 
 proc getKey(ukey: string): tuple[key: string, val: bool] =
   var kv = ukey.replace(re"\..*", "").split("-", 1)
@@ -132,20 +146,20 @@ proc getKey(ukey: string): tuple[key: string, val: bool] =
 
 proc getNimout(file: string, rename=true): string =
   result = file.splitFile().name.replace(re"[\-\.]", "_") & ".nim"
-  if OUTPUT != "":
-    result = OUTPUT/result
+  if gOutput != "":
+    result = gOutput/result
 
   if not rename:
     return
 
-  if RENAMES.hasKey(file):
-    result = RENAMES[file]
+  if gRenames.hasKey(file):
+    result = gRenames[file]
 
   if not dirExists(parentDir(result)):
     createDir(parentDir(result))
 
 proc exclude(file: string): bool =
-  for excl in EXCLUDES:
+  for excl in gExcludes:
     if excl in file:
       return true
   return false
@@ -159,7 +173,7 @@ proc search(file: string): string =
     result = getNimout(file)
   elif not fileExists(result) and not dirExists(result):
     var found = false
-    for inc in INCLUDES:
+    for inc in gIncludes:
       result = inc/file
       if fileExists(result) or dirExists(result):
         found = true
@@ -265,7 +279,6 @@ proc rename(file: string, renfile: string) =
     nimout = getNimout(file, false)
     newname = renfile.replace("$nimout", extractFilename(nimout))
 
-  #if newname =~ peg"(!\$.)*{'$replace'\s*'('\s*{(!\,\S)+}\s*','\s*{(!\)\S)+}\s*')'}":
   if newname =~ peg"(!\$.)*{'$replace'\s*'('\s*{(!\)\S)+}')'}":
     var final = nimout.extractFilename()
     for entry in matches[1].split(","):
@@ -274,14 +287,14 @@ proc rename(file: string, renfile: string) =
         echo "Bad replace syntax: " & renfile
         quit(1)
 
-      var
+      let
         srch = spl[0].strip()
         repl = spl[1].strip()
 
       final = final.replace(srch, repl)
     newname = newname.replace(matches[0], final)
 
-  RENAMES[file] = OUTPUT/newname
+  gRenames[file] = gOutput/newname
 
 proc compile(dir="", file=""): string =
   proc fcompile(file: string): string =
@@ -309,19 +322,19 @@ proc fixFuncProtos(file: string) =
 
 proc getIncls(file: string, inline=false): seq[string] =
   result = @[]
-  if inline and file in DONE_INLINE:
+  if inline and file in gDoneInline:
     return
 
   withFile(file):
     for f in content.findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
       var inc = f.captures[0].strip()
-      if ((QUOTES and inc.contains("\"")) or (FILTER != "" and FILTER in inc)) and (not exclude(inc)):
+      if ((gQuotes and inc.contains("\"")) or (gFilter != "" and gFilter in inc)) and (not exclude(inc)):
         result.add(
           inc.replace(re"""[<>"]""", "").replace(re"\/[\*\/].*$", "").strip())
 
     result = result.deduplicate()
 
-  DONE_INLINE.add(file)
+  gDoneInline.add(file)
 
   if inline:
     var sres = newSeq[string]()
@@ -353,7 +366,7 @@ proc runPreprocess(file, ppflags, flags: string, inline: bool): string =
     pproc = if flags.contains("cpp"): "g++" else: "gcc"
     cmd = "$# -E $# $#" % [pproc, ppflags, file]
 
-  for inc in INCLUDES:
+  for inc in gIncludes:
     cmd &= " -I " & inc
 
   # Run preprocessor
@@ -414,11 +427,11 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
   if file == "":
     return
 
-  if file in DONE:
+  if file in gDoneRecursive:
     return
 
   echo "Processing $# => $#" % [file, outfile]
-  DONE.add(file)
+  gDoneRecursive.add(file)
 
   fixFuncProtos(file)
 
@@ -455,10 +468,11 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
     passC = ""
     outlib = ""
     outpragma = ""
+    outcompile = ""
 
   passC = "import strutils\n"
-  for inc in INCLUDES:
-    passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [OUTPUT, inc]) & "\n"
+  for inc in gIncludes:
+    passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [gOutput, inc]) & "\n"
 
   for prag in pragma:
     outpragma &= "{." & prag & ".}\n"
@@ -517,6 +531,8 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
   freplace(outfile, " {.cdecl.})", ")")
 
   # Include {.compile.} directives
+  outcompile = compile(compile)
+
   for cpl in compile:
     let fcpl = search(cpl)
     if getFileInfo(fcpl).kind == pcFile:
@@ -544,12 +560,12 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
     cfg = cfgin
     sfile = search(file)
 
-  for pattern in WILDCARDS.keys():
+  for pattern in gWildcards.keys():
     let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
     if file.find(re(pat)).isSome():
       echo "Appending " & file & " " & pattern
-      for key in WILDCARDS[pattern].keys():
-        cfg[key & "." & pattern] = WILDCARDS[pattern][key]
+      for key in gWildcards[pattern].keys():
+        cfg[key & "." & pattern] = gWildcards[pattern][key]
 
   var
     srch = ""
@@ -634,73 +650,75 @@ proc runCfg(cfg: string) =
     echo "Config doesn't exist: " & cfg
     quit(1)
 
-  CONFIG = loadConfig(cfg)
+  gConfig = loadConfig(cfg)
 
-  if CONFIG.hasKey("n.global"):
-    if CONFIG["n.global"].hasKey("output"):
-      OUTPUT = CONFIG["n.global"]["output"]
-      if dirExists(OUTPUT):
+  if gConfig.hasKey("n.global"):
+    if gConfig["n.global"].hasKey("output"):
+      gOutput = gConfig["n.global"]["output"]
+      if dirExists(gOutput):
         if "-f" in commandLineParams():
           try:
-            removeDir(OUTPUT)
+            removeDir(gOutput)
           except OSError:
-            echo "Directory in use: " & OUTPUT
+            echo "Directory in use: " & gOutput
             quit(1)
         else:
-          for f in walkFiles(OUTPUT/"*.nim"):
+          for f in walkFiles(gOutput/"*.nim"):
             try:
               removeFile(f)
             except OSError:
               echo "Unable to delete: " & f
               quit(1)
-      createDir(OUTPUT)
+      createDir(gOutput)
 
-    if CONFIG["n.global"].hasKey("filter"):
-      FILTER = CONFIG["n.global"]["filter"]
-    if CONFIG["n.global"].hasKey("quotes"):
-      if CONFIG["n.global"]["quotes"] == "false":
-        QUOTES = false
+    if gConfig["n.global"].hasKey("filter"):
+      gFilter = gConfig["n.global"]["filter"]
+    if gConfig["n.global"].hasKey("quotes"):
+      if gConfig["n.global"]["quotes"] == "false":
+        gQuotes = false
 
-  if CONFIG.hasKey("n.include"):
-    for inc in CONFIG["n.include"].keys():
-      INCLUDES.add(inc)
+  if gConfig.hasKey("n.include"):
+    for inc in gConfig["n.include"].keys():
+      gIncludes.add(inc)
 
-  if CONFIG.hasKey("n.exclude"):
-    for excl in CONFIG["n.exclude"].keys():
-      EXCLUDES.add(excl)
+  if gConfig.hasKey("n.exclude"):
+    for excl in gConfig["n.exclude"].keys():
+      gExcludes.add(excl)
 
-  if CONFIG.hasKey("n.prepare"):
-    for prep in CONFIG["n.prepare"].keys():
+  if gConfig.hasKey("n.prepare"):
+    for prep in gConfig["n.prepare"].keys():
       let (key, val) = getKey(prep)
       if val == true:
         if key == "download":
-          downloadUrl(CONFIG["n.prepare"][prep])
+          downloadUrl(gConfig["n.prepare"][prep])
         elif key == "extract":
-          extractZip(CONFIG["n.prepare"][prep])
+          extractZip(gConfig["n.prepare"][prep])
         elif key == "git":
-          gitRemotePull(CONFIG["n.prepare"][prep])
+          gitRemotePull(gConfig["n.prepare"][prep])
         elif key == "gitremote":
-          gitRemotePull(CONFIG["n.prepare"][prep], false)
+          gitRemotePull(gConfig["n.prepare"][prep], false)
         elif key == "gitsparse":
-          gitSparseCheckout(CONFIG["n.prepare"][prep])
+          gitSparseCheckout(gConfig["n.prepare"][prep])
         elif key == "execute":
-          discard execProc(CONFIG["n.prepare"][prep])
+          discard execProc(gConfig["n.prepare"][prep])
+        elif key == "copy":
+          doCopy(gConfig["n.prepare"][prep])
 
-  if CONFIG.hasKey("n.wildcard"):
+  if gConfig.hasKey("n.wildcard"):
     var wildcard = ""
-    for wild in CONFIG["n.wildcard"].keys():
+    for wild in gConfig["n.wildcard"].keys():
       let (key, val) = getKey(wild)
       if val == true:
         if key == "wildcard":
-          wildcard = CONFIG["n.wildcard"][wild]
+          wildcard = gConfig["n.wildcard"][wild]
         else:
-          WILDCARDS.setSectionKey(wildcard, wild, CONFIG["n.wildcard"][wild])
+          gWildcards.setSectionKey(wildcard, wild, gConfig["n.wildcard"][wild])
 
-  for file in CONFIG.keys():
+  for file in gConfig.keys():
     if file in @["n.global", "n.include", "n.exclude", "n.prepare", "n.wildcard"]:
       continue
 
-    runFile(file, CONFIG[file])
+    runFile(file, gConfig[file])
 
 # ###
 # Main loop
