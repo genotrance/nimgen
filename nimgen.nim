@@ -468,7 +468,6 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
     passC = ""
     outlib = ""
     outpragma = ""
-    outcompile = ""
 
   passC = "import strutils\n"
   for inc in gIncludes:
@@ -531,8 +530,6 @@ proc c2nim(fl, outfile, flags, ppflags: string, recurse, inline, preprocess, cta
   freplace(outfile, " {.cdecl.})", ")")
 
   # Include {.compile.} directives
-  outcompile = compile(compile)
-
   for cpl in compile:
     let fcpl = search(cpl)
     if getFileInfo(fcpl).kind == pcFile:
