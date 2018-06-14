@@ -7,6 +7,8 @@ var
   gConfig: Config
   gFilter = ""
   gQuotes = true
+  gCppCompiler = "g++"
+  gCCompiler = "gcc"
   gOutput = ""
   gIncludes: seq[string] = @[]
   gExcludes: seq[string] = @[]
@@ -369,7 +371,7 @@ proc getDefines(file: string, inline=false): string =
 
 proc runPreprocess(file, ppflags, flags: string, inline: bool): string =
   var
-    pproc = if flags.contains("cpp"): "g++" else: "gcc"
+    pproc = if flags.contains("cpp"): gCppCompiler else: gCCompiler
     cmd = "$# -E $# $#" % [pproc, ppflags, file]
 
   for inc in gIncludes:
@@ -670,6 +672,11 @@ proc runCfg(cfg: string) =
               echo "Unable to delete: " & f
               quit(1)
       createDir(gOutput)
+
+    if gConfig["n.global"].hasKey("cpp_compiler"):
+      gCppCompiler = gConfig["n.global"]["cpp_compiler"]
+    if gConfig["n.global"].hasKey("c_compiler"):
+      gCCompiler = gConfig["n.global"]["c_compiler"]
 
     if gConfig["n.global"].hasKey("filter"):
       gFilter = gConfig["n.global"]["filter"]
