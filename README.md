@@ -143,6 +143,8 @@ The following keys apply to library source code (before processing) and generate
 
 ```search``` = search string providing context for following prepend/append/replace directives
 
+```execute``` = execute a command on a file and store the output of the command as the new file contents. Ex: execute = "cat $file | grep 'static inline'"
+
 ```prepend``` = string value to prepend into file at beginning or before search
 
 ```append``` = string value to append into file at the end or after search
