@@ -73,6 +73,10 @@ _[n.global]_
 
 ```filter``` = string to identify and recurse into library .h files in #include statements and exclude standard headers
 
+```cpp_compiler``` = string to specify a CPP compiler executable. [default: g++]
+
+```c_compiler``` = string to specify a C compiler executable. [default: gcc]
+
 _[n.include]_
 
 List of all directories, one per line, to include in the search path. This is used by:-
