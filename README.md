@@ -109,6 +109,11 @@ File wildcards such as *.nim, ssl*.h, etc. can be used to perform tasks across a
 
 ```wildcard``` = pattern to match against. All keys following the wildcard declaration will apply to matched files
 
+_[n.postwildcard]_
+The same as n.wildcard, but instead of operating on the files before nimgen is done generating, it operates after, so you can modify Nim files or other files that result from nimgen or c2nim.
+
+```wildcard``` = pattern to match against. All keys following the wildcard declaration will apply to matched files
+
 _[sourcefile]_
 
 The following keys apply to library source code and help with generating the .nim files. -win, -lin and -osx can be used for OS specific tasks. E.g. dynlib-win, pragma-win

@@ -2,6 +2,7 @@ import nre, os, ospaths, osproc, parsecfg, pegs, ropes, sequtils, streams, strut
 
 var
   gDoneRecursive: seq[string] = @[]
+  gDonePostWildcard: seq[string] = @[]
   gDoneInline: seq[string] = @[]
 
   gProjectDir = ""
@@ -13,6 +14,7 @@ var
   gExcludes: seq[string] = @[]
   gRenames = initTable[string, string]()
   gWildcards = newConfig()
+  gPostWildcard = newConfig()
 
 type
   c2nimConfigObj = object
@@ -582,29 +584,11 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   if outlib != "":
     prepend(outfile, outlib)
 
-# ###
-# Processor
 
-proc runFile(file: string, cfgin: OrderedTableRef) =
-  var
-    cfg = cfgin
-    sfile = search(file)
-
-  for pattern in gWildcards.keys():
-    let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
-    if file.find(re(pat)).isSome():
-      echo "Appending " & file & " " & pattern
-      for key in gWildcards[pattern].keys():
-        cfg[key & "." & pattern] = gWildcards[pattern][key]
-
+proc doActions(file: string, c2nimConfig: var c2nimConfigObj, cfg: OrderedTableRef) =
   var
     srch = ""
-
-    c2nimConfig = c2nimConfigObj(
-      flags: "--stdcall", ppflags: "",
-      recurse: false, inline: false, preprocess: false, ctags: false, defines: false,
-      dynlib: @[], compile: @[], pragma: @[]
-    )
+    sfile = search(file)
 
   for act in cfg.keys():
     let (action, val) = getKey(act)
@@ -643,6 +627,51 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       elif action == "search":
         srch = act
 
+proc processPostWildcard(nimFile: string, c2nimConfig: var c2nimConfigObj) =
+  var file = search(nimFile)
+  if file == "":
+    return
+
+  if file in gDonePostWildcard:
+    return
+
+  gDonePostWildcard.add(file)
+
+  var postConfig = newOrderedTable[string, string]()
+  for pattern in gPostWildcard.keys():
+    let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
+    if nimFile.find(re(pat)).isSome():
+      for key in gPostWildcard[pattern].keys():
+        let value = gPostWildcard[pattern][key]
+        #echo key, ": ", "\"", value, "\" in ", nimFile
+        postConfig[key & "." & pattern] = value
+
+  doActions(nimFile, c2nimConfig, postConfig)
+
+# ###
+# Processor
+
+proc runFile(file: string, cfgin: OrderedTableRef) =
+  var
+    cfg = cfgin
+    sfile = search(file)
+
+  for pattern in gWildcards.keys():
+    let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
+    if file.find(re(pat)).isSome():
+      echo "Appending " & file & " " & pattern
+      for key in gWildcards[pattern].keys():
+        cfg[key & "." & pattern] = gWildcards[pattern][key]
+
+  var
+    c2nimConfig = c2nimConfigObj(
+      flags: "--stdcall", ppflags: "",
+      recurse: false, inline: false, preprocess: false, ctags: false, defines: false,
+      dynlib: @[], compile: @[], pragma: @[]
+    )
+
+  doActions(file, c2nimConfig, cfg)
+
   if file.splitFile().ext != ".nim":
     var noprocess = false
 
@@ -670,7 +699,10 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       quit(1)
 
     if not noprocess:
-      c2nim(file, getNimout(sfile), c2nimConfig)
+      let nimFile = getNimout(sfile)
+      c2nim(file, nimFile, c2nimConfig)
+
+      processPostWildcard(nimFile, c2nimConfig)
 
 proc runCfg(cfg: string) =
   if not fileExists(cfg):
@@ -743,8 +775,22 @@ proc runCfg(cfg: string) =
         else:
           gWildcards.setSectionKey(wildcard, wild, gConfig["n.wildcard"][wild])
 
+  if gConfig.hasKey("n.postwildcard"):
+    var wildcard = ""
+    for postKey in gConfig["n.postwildcard"].keys():
+      let (key, val) = getKey(postKey)
+      if val == true:
+        if key == "wildcard":
+          wildcard = gConfig["n.postwildcard"][postKey]
+        else:
+          gPostWildcard.setSectionKey(
+            wildcard, postKey, gConfig["n.postwildcard"][postKey]
+          )
+
+
   for file in gConfig.keys():
-    if file in @["n.global", "n.include", "n.exclude", "n.prepare", "n.wildcard"]:
+    if file in @["n.global", "n.include", "n.exclude",
+                 "n.prepare", "n.wildcard", "n.postwildcard"]:
       continue
 
     runFile(file, gConfig[file])
