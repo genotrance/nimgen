@@ -35,6 +35,33 @@ Options:
 # ###
 # Helpers
 
+proc addEnv(str: string): string =
+  var newStr = str
+  for pair in envPairs():
+    try:
+      newStr = newStr % [pair.key, pair.value.string]
+    except ValueError:
+      # Ignore if there are no values to replace. We
+      # want to continue anyway
+      discard
+
+  try:
+    newStr = newStr % ["output", gOutput]
+  except ValueError:
+    # Ignore if there are no values to replace. We
+    # want to continue anyway
+    discard
+
+  # if there are still format args, print a warning
+  if newStr.contains("${"):
+    echo "WARNING: \"", newStr, "\" still contains an uninterpolated value!"
+
+  return newStr
+
+proc `[]`(table: OrderedTableRef[string, string], key: string): string =
+  ## Gets table values with env vars inserted
+  tables.`[]`(table, key).addEnv
+
 proc execProc(cmd: string): string =
   result = ""
   var
@@ -497,6 +524,7 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     outpragma &= "{." & prag & ".}\n"
 
   let fname = file.splitFile().name.replace(re"[\.\-]", "_")
+
   if c2nimConfig.dynlib.len() != 0:
     let
       win = "when defined(Windows):\n"
@@ -599,7 +627,9 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       if action == "create":
         createDir(file.splitPath().head)
         writeFile(file, cfg[act])
-      elif action in @["prepend", "append", "replace", "comment", "rename", "compile", "dynlib", "pragma", "pipe"] and sfile != "":
+      elif action in @["prepend", "append", "replace", "comment",
+                       "rename", "compile", "dynlib", "pragma",
+                       "pipe"] and sfile != "":
         if action == "prepend":
           if srch != "":
             prepend(sfile, cfg[act], cfg[srch])
@@ -700,30 +730,31 @@ proc runCfg(cfg: string) =
 
   if gConfig.hasKey("n.include"):
     for inc in gConfig["n.include"].keys():
-      gIncludes.add(inc)
+      gIncludes.add(inc.addEnv())
 
   if gConfig.hasKey("n.exclude"):
     for excl in gConfig["n.exclude"].keys():
-      gExcludes.add(excl)
+      gExcludes.add(excl.addEnv())
 
   if gConfig.hasKey("n.prepare"):
     for prep in gConfig["n.prepare"].keys():
       let (key, val) = getKey(prep)
       if val == true:
+        let prepVal = gConfig["n.prepare"][prep]
         if key == "download":
-          downloadUrl(gConfig["n.prepare"][prep])
+          downloadUrl(prepVal)
         elif key == "extract":
-          extractZip(gConfig["n.prepare"][prep])
+          extractZip(prepVal)
         elif key == "git":
-          gitRemotePull(gConfig["n.prepare"][prep])
+          gitRemotePull(prepVal)
         elif key == "gitremote":
-          gitRemotePull(gConfig["n.prepare"][prep], false)
+          gitRemotePull(prepVal, false)
         elif key == "gitsparse":
-          gitSparseCheckout(gConfig["n.prepare"][prep])
+          gitSparseCheckout(prepVal)
         elif key == "execute":
-          discard execProc(gConfig["n.prepare"][prep])
+          discard execProc(prepVal)
         elif key == "copy":
-          doCopy(gConfig["n.prepare"][prep])
+          doCopy(prepVal)
 
   if gConfig.hasKey("n.wildcard"):
     var wildcard = ""
@@ -733,7 +764,8 @@ proc runCfg(cfg: string) =
         if key == "wildcard":
           wildcard = gConfig["n.wildcard"][wild]
         else:
-          gWildcards.setSectionKey(wildcard, wild, gConfig["n.wildcard"][wild])
+          gWildcards.setSectionKey(wildcard, wild,
+                                   gConfig["n.wildcard"][wild])
 
   for file in gConfig.keys():
     if file in @["n.global", "n.include", "n.exclude", "n.prepare", "n.wildcard"]:
