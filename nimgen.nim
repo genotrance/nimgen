@@ -409,14 +409,14 @@ proc runPreprocess(file, ppflags, flags: string, inline: bool): string =
 
 proc runCtags(file: string): string =
   var
-    cmd = "ctags -o - --fields=+S+K --c-kinds=p --file-scope=no " & file
+    cmd = "ctags -o - --fields=+S+K --c-kinds=+p --file-scope=no " & file
     fps = execProc(cmd)
     fdata = ""
 
   for line in fps.splitLines():
     var spl = line.split(re"\t")
     if spl.len() > 4:
-      if spl[0] != "main":
+      if spl[0] != "main" and spl[3] != "member":
         var fn = ""
         var match = spl[2].find(re"/\^(.*?)\(")
         if match.isSome():
