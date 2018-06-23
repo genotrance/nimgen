@@ -4,7 +4,7 @@ var
   gDoneRecursive: seq[string] = @[]
   gDoneInline: seq[string] = @[]
 
-  gProjectDir = getCurrentDir()
+  gProjectDir = ""
   gConfig: Config
   gFilter = ""
   gQuotes = true
@@ -650,6 +650,8 @@ proc runCfg(cfg: string) =
   if not fileExists(cfg):
     echo "Config doesn't exist: " & cfg
     quit(1)
+
+  gProjectDir = parentDir(cfg)
 
   gConfig = loadConfig(cfg)
 
