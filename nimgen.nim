@@ -651,7 +651,7 @@ proc runCfg(cfg: string) =
     echo "Config doesn't exist: " & cfg
     quit(1)
 
-  gProjectDir = parentDir(cfg)
+  gProjectDir = parentDir(cfg.expandFilename())
 
   gConfig = loadConfig(cfg)
 
