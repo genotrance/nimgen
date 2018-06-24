@@ -4,6 +4,7 @@ var
   gDoneRecursive: seq[string] = @[]
   gDoneInline: seq[string] = @[]
 
+  gProjectDir = ""
   gConfig: Config
   gFilter = ""
   gQuotes = true
@@ -59,7 +60,7 @@ proc extractZip(zipfile: string) =
     cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
 
   setCurrentDir(gOutput)
-  defer: setCurrentDir("..")
+  defer: setCurrentDir(gProjectDir)
 
   echo "Extracting " & zipfile
   discard execProc(cmd % zipfile)
@@ -84,7 +85,7 @@ proc gitReset() =
   echo "Resetting Git repo"
 
   setCurrentDir(gOutput)
-  defer: setCurrentDir("..")
+  defer: setCurrentDir(gProjectDir)
 
   discard execProc("git reset --hard HEAD")
 
@@ -95,7 +96,7 @@ proc gitRemotePull(url: string, pull=true) =
     return
 
   setCurrentDir(gOutput)
-  defer: setCurrentDir("..")
+  defer: setCurrentDir(gProjectDir)
 
   echo "Setting up Git repo"
   discard execProc("git init .")
@@ -112,7 +113,7 @@ proc gitSparseCheckout(plist: string) =
     return
 
   setCurrentDir(gOutput)
-  defer: setCurrentDir("..")
+  defer: setCurrentDir(gProjectDir)
 
   discard execProc("git config core.sparsecheckout true")
   writeFile(sparsefile, plist)
@@ -649,6 +650,8 @@ proc runCfg(cfg: string) =
   if not fileExists(cfg):
     echo "Config doesn't exist: " & cfg
     quit(1)
+
+  gProjectDir = parentDir(cfg.expandFilename())
 
   gConfig = loadConfig(cfg)
 
