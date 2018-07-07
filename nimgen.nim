@@ -476,6 +476,9 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     cfile = "temp-$#.c" % [outfile.extractFilename()]
     writeFile(cfile, runCtags(file))
 
+  while not fileExists(cfile):
+    sleep(10)
+
   if c2nimConfig.defines and (c2nimConfig.preprocess or c2nimConfig.ctags):
     prepend(cfile, getDefines(file, c2nimConfig.inline))
 
@@ -530,6 +533,9 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   when defined(windows):
     cmd = "cmd /c " & cmd
   discard execProc(cmd)
+
+  while not fileExists(outfile):
+    sleep(10)
 
   if c2nimConfig.preprocess or c2nimConfig.ctags:
     try:
