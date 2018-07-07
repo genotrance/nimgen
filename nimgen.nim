@@ -194,15 +194,17 @@ proc search(file: string): string =
 # ###
 # Loading / unloading
 
+proc openRetry(file: string, mode: FileMode = fmRead): File =
+  while true:
+    try:
+      result = open(file, mode)
+      break
+    except IOError:
+      sleep(100)
+
 template withFile(file: string, body: untyped): untyped =
   if fileExists(file):
-    var f: File
-    while true:
-      try:
-        f = open(file)
-        break
-      except:
-        sleep(100)
+    var f = openRetry(file)
 
     var contentOrig = f.readAll()
     f.close()
@@ -211,7 +213,7 @@ template withFile(file: string, body: untyped): untyped =
     body
 
     if content != contentOrig:
-      var f = open(file, fmWrite)
+      f = openRetry(file, fmWrite)
       write(f, content)
       f.close()
   else:
@@ -476,9 +478,6 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     cfile = "temp-$#.c" % [outfile.extractFilename()]
     writeFile(cfile, runCtags(file))
 
-  while not fileExists(cfile):
-    sleep(10)
-
   if c2nimConfig.defines and (c2nimConfig.preprocess or c2nimConfig.ctags):
     prepend(cfile, getDefines(file, c2nimConfig.inline))
 
@@ -533,9 +532,6 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   when defined(windows):
     cmd = "cmd /c " & cmd
   discard execProc(cmd)
-
-  while not fileExists(outfile):
-    sleep(10)
 
   if c2nimConfig.preprocess or c2nimConfig.ctags:
     try:
