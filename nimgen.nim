@@ -229,6 +229,13 @@ proc prepend(file: string, data: string, search="") =
       if idx != -1:
         content = content[0..<idx] & data & content[idx..<content.len()]
 
+proc pipe(file: string, command: string) =
+  let cmd = command % ["file", file]
+  let commandResult = execProc(cmd).strip()
+  if commandResult != "":
+    withFile(file):
+      content = commandResult
+
 proc append(file: string, data: string, search="") =
   withFile(file):
     if search == "":
@@ -588,7 +595,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       if action == "create":
         createDir(file.splitPath().head)
         writeFile(file, cfg[act])
-      elif action in @["prepend", "append", "replace", "comment", "rename", "compile", "dynlib", "pragma"] and sfile != "":
+      elif action in @["prepend", "append", "replace", "comment", "rename", "compile", "dynlib", "pragma", "pipe"] and sfile != "":
         if action == "prepend":
           if srch != "":
             prepend(sfile, cfg[act], cfg[srch])
@@ -613,6 +620,8 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
           c2nimConfig.dynlib.add(cfg[act])
         elif action == "pragma":
           c2nimConfig.pragma.add(cfg[act])
+        elif action == "pipe":
+          pipe(sfile, cfg[act])
         srch = ""
       elif action == "search":
         srch = act
