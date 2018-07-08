@@ -438,6 +438,9 @@ proc runCtags(file: string): string =
 
 proc runFile(file: string, cfgin: OrderedTableRef)
 
+template relativePath(path: untyped): untyped =
+  path.multiReplace([(gOutput, ""), ("\\", "/"), ("//", "/")])
+
 proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   var file = search(fl)
   if file == "":
@@ -487,24 +490,18 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     outlib = ""
     outpragma = ""
 
-  passC = "import strutils\n"
-  passC &= "import ospaths\n"
+  passC = "import ospaths, strutils\n"
 
   for inc in gIncludes:
-    if inc.isAbsolute:
-      passC &= ("""{.passC: "-I\"$#\"".}""" % [inc]) & "\n"
-    else:
-      let relativeInc = inc.replace(gOutput, "")
-      passC &= (
-        """{.passC: "-I\"" & currentSourcePath().splitPath().head & "/$#\"".}""" %
-        [relativeInc]
-      ) & "\n"
+    passC &= (
+      """{.passC: "-I\"" & currentSourcePath().splitPath().head & "$#\"".}""" %
+        inc.relativePath()
+    ) & "\n"
 
   for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
 
   let fname = file.splitFile().name.replace(re"[\.\-]", "_")
-  let fincl = file.replace(gOutput, "")
 
   if c2nimConfig.dynlib.len() != 0:
     let
@@ -535,12 +532,8 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     if outlib != "":
       extflags &= " --dynlib:dynlib$#" % fname
   else:
-    if file.isAbsolute():
-      passC &= "const header$# = \"$#\"\n" % [fname, fincl]
-    else:
-      # based on the current source directory, get the include path
-      # works for nimble installations and local repo clones
-      passC &= "const header$# = currentSourcePath().splitPath().head & \"/$#\"\n" % [fname, fincl]
+    passC &= "const header$# = currentSourcePath().splitPath().head & \"$#\"\n" %
+      [fname, file.relativePath()]
     extflags = "--header:header$#" % fname
 
   # Run c2nim on generated file
