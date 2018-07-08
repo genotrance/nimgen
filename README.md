@@ -28,7 +28,7 @@ Nimble already requires Git so those commands can be assumed to be present to do
 
 __Capabilities & Limitations__
 
-Nimgen supports compiling in C/C++ sources as well as loading in dynamic libraries at this time. Support for static libraries (.a, .lib) are still to come.
+Nimgen supports compiling in C/C++ sources and static libraries as well as loading in dynamic libraries.
 
 To see examples of nimgen in action check out the following wrappers:-
 * Link with a dynamic library
@@ -146,6 +146,8 @@ The following keys apply to library source code (before processing) and generate
 ```create``` = create a file at exact location with contents specified. File needs to be in the _[n.exclude]_ list in order to be created.
 
 ```search``` = search string providing context for following prepend/append/replace directives
+
+```pipe``` = execute a command on a file and store the output of the command as the new file contents. Ex: pipe = "cat $file | grep 'static inline'"
 
 ```prepend``` = string value to prepend into file at beginning or before search
 

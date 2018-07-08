@@ -4,6 +4,7 @@ var
   gDoneRecursive: seq[string] = @[]
   gDoneInline: seq[string] = @[]
 
+  gProjectDir = ""
   gConfig: Config
   gFilter = ""
   gQuotes = true
@@ -61,7 +62,7 @@ proc extractZip(zipfile: string) =
     cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
 
   setCurrentDir(gOutput)
-  defer: setCurrentDir("..")
+  defer: setCurrentDir(gProjectDir)
 
   echo "Extracting " & zipfile
   discard execProc(cmd % zipfile)
@@ -86,7 +87,7 @@ proc gitReset() =
   echo "Resetting Git repo"
 
   setCurrentDir(gOutput)
-  defer: setCurrentDir("..")
+  defer: setCurrentDir(gProjectDir)
 
   discard execProc("git reset --hard HEAD")
 
@@ -97,7 +98,7 @@ proc gitRemotePull(url: string, pull=true) =
     return
 
   setCurrentDir(gOutput)
-  defer: setCurrentDir("..")
+  defer: setCurrentDir(gProjectDir)
 
   echo "Setting up Git repo"
   discard execProc("git init .")
@@ -114,7 +115,7 @@ proc gitSparseCheckout(plist: string) =
     return
 
   setCurrentDir(gOutput)
-  defer: setCurrentDir("..")
+  defer: setCurrentDir(gProjectDir)
 
   discard execProc("git config core.sparsecheckout true")
   writeFile(sparsefile, plist)
@@ -195,15 +196,17 @@ proc search(file: string): string =
 # ###
 # Loading / unloading
 
+proc openRetry(file: string, mode: FileMode = fmRead): File =
+  while true:
+    try:
+      result = open(file, mode)
+      break
+    except IOError:
+      sleep(100)
+
 template withFile(file: string, body: untyped): untyped =
   if fileExists(file):
-    var f: File
-    while true:
-      try:
-        f = open(file)
-        break
-      except:
-        sleep(100)
+    var f = openRetry(file)
 
     var contentOrig = f.readAll()
     f.close()
@@ -212,7 +215,7 @@ template withFile(file: string, body: untyped): untyped =
     body
 
     if content != contentOrig:
-      var f = open(file, fmWrite)
+      f = openRetry(file, fmWrite)
       write(f, content)
       f.close()
   else:
@@ -229,6 +232,13 @@ proc prepend(file: string, data: string, search="") =
       let idx = content.find(search)
       if idx != -1:
         content = content[0..<idx] & data & content[idx..<content.len()]
+
+proc pipe(file: string, command: string) =
+  let cmd = command % ["file", file]
+  let commandResult = execProc(cmd).strip()
+  if commandResult != "":
+    withFile(file):
+      content = commandResult
 
 proc append(file: string, data: string, search="") =
   withFile(file):
@@ -411,14 +421,14 @@ proc runPreprocess(file, ppflags, flags: string, inline: bool): string =
 
 proc runCtags(file: string): string =
   var
-    cmd = "ctags -o - --fields=+S+K --c-kinds=p --file-scope=no " & file
+    cmd = "ctags -o - --fields=+S+K --c-kinds=+p --file-scope=no " & file
     fps = execProc(cmd)
     fdata = ""
 
   for line in fps.splitLines():
     var spl = line.split(re"\t")
     if spl.len() > 4:
-      if spl[0] != "main":
+      if spl[0] != "main" and spl[3] != "member":
         var fn = ""
         var match = spl[2].find(re"/\^(.*?)\(")
         if match.isSome():
@@ -589,7 +599,7 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       if action == "create":
         createDir(file.splitPath().head)
         writeFile(file, cfg[act])
-      elif action in @["prepend", "append", "replace", "comment", "rename", "compile", "dynlib", "pragma"] and sfile != "":
+      elif action in @["prepend", "append", "replace", "comment", "rename", "compile", "dynlib", "pragma", "pipe"] and sfile != "":
         if action == "prepend":
           if srch != "":
             prepend(sfile, cfg[act], cfg[srch])
@@ -614,6 +624,8 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
           c2nimConfig.dynlib.add(cfg[act])
         elif action == "pragma":
           c2nimConfig.pragma.add(cfg[act])
+        elif action == "pipe":
+          pipe(sfile, cfg[act])
         srch = ""
       elif action == "search":
         srch = act
@@ -651,6 +663,8 @@ proc runCfg(cfg: string) =
   if not fileExists(cfg):
     echo "Config doesn't exist: " & cfg
     quit(1)
+
+  gProjectDir = parentDir(cfg.expandFilename())
 
   gConfig = loadConfig(cfg)
 
