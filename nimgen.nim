@@ -438,6 +438,9 @@ proc runCtags(file: string): string =
 
 proc runFile(file: string, cfgin: OrderedTableRef)
 
+template relativePath(path: untyped): untyped =
+  path.multiReplace([(gOutput, ""), ("\\", "/"), ("//", "/")])
+
 proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   var file = search(fl)
   if file == "":
@@ -487,14 +490,19 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     outlib = ""
     outpragma = ""
 
-  passC = "import strutils\n"
+  passC = "import ospaths, strutils\n"
+
   for inc in gIncludes:
-    passC &= ("""{.passC: "-I\"" & gorge("nimble path $#").strip() & "/$#\"".}""" % [gOutput, inc]) & "\n"
+    passC &= (
+      """{.passC: "-I\"" & currentSourcePath().splitPath().head & "$#\"".}""" %
+        inc.relativePath()
+    ) & "\n"
 
   for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
 
   let fname = file.splitFile().name.replace(re"[\.\-]", "_")
+
   if c2nimConfig.dynlib.len() != 0:
     let
       win = "when defined(Windows):\n"
@@ -524,7 +532,8 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     if outlib != "":
       extflags &= " --dynlib:dynlib$#" % fname
   else:
-    passC &= "const header$# = \"$#\"\n" % [fname, fl]
+    passC &= "const header$# = currentSourcePath().splitPath().head & \"$#\"\n" %
+      [fname, file.relativePath()]
     extflags = "--header:header$#" % fname
 
   # Run c2nim on generated file
