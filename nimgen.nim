@@ -490,11 +490,18 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   passC = "import strutils\n"
   passC &= "import ospaths\n"
 
+  for inc in gIncludes:
+    let relativeInc = inc.replace(gOutput & $DirSep, "")
+    passC &= (
+      """{.passC: "-I\"" & currentSourcePath().splitPath().head & "/$#\"".}""" %
+      [relativeInc]
+    ) & "\n"
+
   for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
 
   let fname = file.splitFile().name.replace(re"[\.\-]", "_")
-  let fincl = file.replace(gOutput, "")
+  let fincl = file.replace(gOutput & $DirSep, "")
 
   if c2nimConfig.dynlib.len() != 0:
     let
