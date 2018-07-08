@@ -491,11 +491,14 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   passC &= "import ospaths\n"
 
   for inc in gIncludes:
-    let relativeInc = inc.replace(gOutput, "")
-    passC &= (
-      """{.passC: "-I\"" & currentSourcePath().splitPath().head & "/$#\"".}""" %
-      [relativeInc]
-    ) & "\n"
+    if inc.isAbsolute:
+      passC &= ("""{.passC: "-I\"$#\"".}""" % [inc]) & "\n"
+    else:
+      let relativeInc = inc.replace(gOutput, "")
+      passC &= (
+        """{.passC: "-I\"" & currentSourcePath().splitPath().head & "/$#\"".}""" %
+        [relativeInc]
+      ) & "\n"
 
   for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
