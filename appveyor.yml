@@ -17,10 +17,10 @@ environment:
       NIM_URL: https://nim-lang.org/download/nim-0.18.0_x32.zip
       NIM_ARCHIVE: nim-0.18.0_x32.zip
       NIM_VERSION: nim-0.18.0
-      LIBSSH2_ARCHIVE: libssh2-1.8.0-1-i686.pkg.tar.xz
-      LIBSSH2_URL: http://repo.msys2.org/msys/i686/libssh2-1.8.0-1-i686.pkg.tar.xz
-      LIBCRYPTO_ARCHIVE: libopenssl-1.0.2.m-1-i686.pkg.tar.xz
-      LIBCRYPTO_URL: http://repo.msys2.org/msys/i686/libopenssl-1.0.2.m-1-i686.pkg.tar.xz
+      LIBSSH2_ARCHIVE: mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
+      LIBSSH2_URL: https://sourceforge.net/projects/msys2/files/REPOS/MINGW/i686/mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz/download
+      LIBCRYPTO_ARCHIVE: mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
+      LIBCRYPTO_URL: https://sourceforge.net/projects/msys2/files/REPOS/MINGW/i686/mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz/download
       DLLS_URL: http://nim-lang.org/download/dlls.zip
       DLLS_ARCHIVE: dlls.zip
       BASE_DIR: c:\projects
@@ -32,7 +32,6 @@ install:
   - 7z x -y "%MINGW_ARCHIVE%"> nul
   - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
   - 7z x -y "%NIM_ARCHIVE%"> nul
-  - CD %MINGW_DIR%
   - IF not exist "%LIBSSH2_ARCHIVE%" appveyor DownloadFile "%LIBSSH2_URL%" -FileName "%LIBSSH2_ARCHIVE%"
   - 7z x -y "%LIBSSH2_ARCHIVE%"> nul
   - IF not exist "%LIBCRYPTO_ARCHIVE%" appveyor DownloadFile "%LIBCRYPTO_URL%" -FileName "%LIBCRYPTO_ARCHIVE%"
