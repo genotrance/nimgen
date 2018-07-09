@@ -2,7 +2,8 @@ version: '{build}'
 
 cache:
 - i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
-- dlls.zip
+- nim-0.18.0_x32.zip
+# - dlls.zip
 
 matrix:
   fast_finish: true
@@ -12,6 +13,9 @@ environment:
     - MINGW_DIR: mingw32
       MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.9.2/threads-win32/dwarf/i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z/download
       MINGW_ARCHIVE: i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
+      NIM_URL: https://nim-lang.org/download/nim-0.18.0_x32.zip
+      NIM_ARCHIVE: nim-0.18.0_x32.zip
+      NIM_VERSION: nim-0.18.0
       DLLS_URL: http://nim-lang.org/download/dlls.zip
       DLLS_ARCHIVE: dlls.zip
       platform: x86
@@ -20,20 +24,22 @@ install:
   - MKDIR %CD%\DIST
   - IF not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
   - 7z x -y "%MINGW_ARCHIVE%" -o"%CD%\DIST"> nul
-  - SET PATH=%CD%\DIST\%MINGW_DIR%\BIN;%CD%\BIN;%PATH%
-  - git clone --depth 1 https://github.com/nim-lang/nim
-  - cd nim
-  - git clone --depth 1 https://github.com/nim-lang/csources
-  - cd csources
-  - IF "%PLATFORM%" == "x64" ( build64.bat ) else ( build.bat )
-  - cd ..
-  - IF not exist "%DLLS_ARCHIVE%" appveyor DownloadFile "%DLLS_URL%" -FileName "%DLLS_ARCHIVE%"
-  - 7z x -y "%DLLS_ARCHIVE%" -o"%CD%\bin"
-  - bin\nim c -d:release koch
-  - koch boot -d:release
-  - koch nimble -d:release
-  - SET PATH=%CD%\bin;%PATH%
-  - cd ..
+  - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
+  - 7z x -y "%NIM_ARCHIVE%" -o"%CD%\DIST"> nul
+  - SET PATH=%CD%\DIST\%MINGW_DIR%\BIN;%CD%\DIST\%NIM_VERSION%;%USERPROFILE%\.nimble\bin;%PATH%
+  # - git clone --depth 1 https://github.com/nim-lang/nim
+  # - cd nim
+  # - git clone --depth 1 https://github.com/nim-lang/csources
+  # - cd csources
+  # - IF "%PLATFORM%" == "x64" ( build64.bat ) else ( build.bat )
+  # - cd ..
+  # - IF not exist "%DLLS_ARCHIVE%" appveyor DownloadFile "%DLLS_URL%" -FileName "%DLLS_ARCHIVE%"
+  # - 7z x -y "%DLLS_ARCHIVE%" -o"%CD%\bin"> nul
+  # - bin\nim c -d:release koch
+  # - koch boot -d:release
+  # - koch nimble -d:release
+  # - SET PATH=%CD%\bin;%PATH%
+  # - cd ..
 
 build_script:
   - nimble install -y
