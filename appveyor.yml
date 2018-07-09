@@ -87,7 +87,9 @@ for:
     - bin/nim c -d:release koch
     - ./koch boot -d:release
     - ./koch nimble -d:release
-    - set PATH=`pwd`/bin:~/.nimble/bin:$PATH
+    - set PATH=~/projects/$NIM_VERSION/bin:~/.nimble/bin:$PATH
+    - echo $PATH
+    - ls bin
     - cd ~/projects/nimgen
 
   on_finish:
