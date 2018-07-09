@@ -80,7 +80,7 @@ for:
 
   install:
     - sudo apt -qq update
-    - sudo apt -qq install --yes python-pygments libssh2-1
+    - sudo apt -qq install --yes python-pygments libssh2-1 libgcrypt20 libgpg-error0
     - cd ~/projects
     - if [ ! -e $NIM_ARCHIVE ]; then curl -s -o $NIM_ARCHIVE $NIM_URL; fi
     - tar xJf $NIM_ARCHIVE
