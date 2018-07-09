@@ -80,7 +80,7 @@ for:
 
   install:
     - sudo apt update -qq
-    - sudo apt install -qq --yes python-pygments
+    - sudo apt install -qq --yes python-pygments libssh2
     - cd ~/projects
     - if [ ! -e $NIM_ARCHIVE ]; then curl -s -o $NIM_ARCHIVE $NIM_URL; fi
     - tar xJf $NIM_ARCHIVE
@@ -93,7 +93,7 @@ for:
     - cd ~/projects/nimgen
 
   on_finish:
-    - zip -r buildlogs-lin.zip ~/.nimble/pkgs
+    - zip -r -q buildlogs-lin.zip ~/.nimble/pkgs
     - appveyor PushArtifact buildlogs-lin.zip
 
   cache:
