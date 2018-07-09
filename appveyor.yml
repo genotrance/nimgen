@@ -79,8 +79,8 @@ for:
     NIM_VERSION: nim-0.18.0
 
   install:
-    - sudo apt update
-    - sudo apt install --yes python-pygments
+    - sudo apt update -qq
+    - sudo apt install -qq --yes python-pygments
     - cd ~/projects
     - if [ ! -e $NIM_ARCHIVE ]; then curl -s -o $NIM_ARCHIVE $NIM_URL; fi
     - tar xJf $NIM_ARCHIVE
@@ -90,10 +90,11 @@ for:
     - ./koch boot -d:release
     - ./koch nimble -d:release
     - export PATH=~/projects/$NIM_VERSION/bin:~/.nimble/bin:$PATH
+    - alias g++="g++ -std=c++11"
     - cd ~/projects/nimgen
 
   on_finish:
-    - zip buildlogs-lin.zip ~/.nimble/pkgs
+    - zip -r buildlogs-lin.zip ~/.nimble/pkgs
     - appveyor PushArtifact buildlogs-lin.zip
 
   cache:
