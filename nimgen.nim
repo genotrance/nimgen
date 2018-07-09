@@ -493,10 +493,13 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   passC = "import ospaths, strutils\n"
 
   for inc in gIncludes:
-    passC &= (
-      """{.passC: "-I\"" & currentSourcePath().splitPath().head & "$#\"".}""" %
-        inc.relativePath()
-    ) & "\n"
+    if inc.isAbsolute():
+      passC &= ("""{.passC: "-I\"$#\"".}""" % [inc]) & "\n"
+    else:
+      passC &= (
+        """{.passC: "-I\"" & currentSourcePath().splitPath().head & "$#\"".}""" %
+          inc.relativePath()
+      ) & "\n"
 
   for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
@@ -532,8 +535,11 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     if outlib != "":
       extflags &= " --dynlib:dynlib$#" % fname
   else:
-    passC &= "const header$# = currentSourcePath().splitPath().head & \"$#\"\n" %
-      [fname, file.relativePath()]
+    if file.isAbsolute():
+      passC &= "const header$# = \"$#\"\n" % [fname, file]
+    else:
+      passC &= "const header$# = currentSourcePath().splitPath().head & \"$#\"\n" %
+        [fname, file.relativePath()]
     extflags = "--header:header$#" % fname
 
   # Run c2nim on generated file
