@@ -79,26 +79,23 @@ for:
     NIM_VERSION: nim-0.18.0
 
   install:
-    - echo $NIM_ARCHIVE
+    - cd ~/projects
     - if [ ! -e $NIM_ARCHIVE ]; then curl -s -o $NIM_ARCHIVE $NIM_URL; fi
-    - echo $?
     - tar xJf $NIM_ARCHIVE
     - cd $NIM_VERSION
     - sh build.sh
-    - bin/nim -d:release koch
+    - bin/nim c -d:release koch
     - ./koch boot -d:release
     - ./koch nimble -d:release
     - set PATH=`pwd`/bin:~/.nimble/bin:$PATH
-    - cd ..
-    - echo `pwd`
-    - ls
+    - cd ~/projects/nimgen
 
   on_finish:
     - zip buildlogs-lin.zip ~/.nimble/pkgs
     - appveyor PushArtifact buildlogs-lin.zip
 
   cache:
-  - nim-0.18.0.tar.xz
+  - ~/projects/nim-0.18.0.tar.xz
 
 build_script:
   - nimble install -y
