@@ -18,12 +18,9 @@ environment:
 
 install:
   - MKDIR %CD%\DIST
-  - MKDIR %CD%\DIST\PCRE
-  - nuget install pcre -Verbosity quiet -Version 8.33.0.1 -OutputDirectory %CD%\DIST\PCRE
   - IF not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
   - 7z x -y "%MINGW_ARCHIVE%" -o"%CD%\DIST"> nul
   - SET PATH=%CD%\DIST\%MINGW_DIR%\BIN;%CD%\BIN;%PATH%
-  - IF "%PLATFORM%" == "x64" ( copy %CD%\DIST\PCRE\pcre.redist.8.33.0.1\build\native\bin\v100\x64\Release\dynamic\utf8\pcre8.dll %CD%\bin\pcre64.dll ) ELSE ( copy %CD%\DIST\PCRE\pcre.redist.8.33.0.1\build\native\bin\v100\Win32\Release\dynamic\utf8\pcre8.dll %CD%\bin\pcre32.dll )
   - git clone --depth 1 https://github.com/nim-lang/nim
   - cd nim
   - git clone --depth 1 https://github.com/nim-lang/csources
