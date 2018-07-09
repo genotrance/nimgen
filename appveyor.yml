@@ -79,8 +79,8 @@ for:
     NIM_VERSION: nim-0.18.0
 
   install:
-    - sudo apt update -qq
-    - sudo apt install -qq --yes python-pygments libssh2
+    - sudo apt -qq update
+    - sudo apt -qq install --yes python-pygments libssh2-1
     - cd ~/projects
     - if [ ! -e $NIM_ARCHIVE ]; then curl -s -o $NIM_ARCHIVE $NIM_URL; fi
     - tar xJf $NIM_ARCHIVE
