@@ -75,8 +75,6 @@ for:
     - c:\projects\mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
     - c:\projects\nim-0.18.0_x32.zip
 
-for:
--
   matrix:
     only:
       - image: Ubuntu
