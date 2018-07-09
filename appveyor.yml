@@ -7,35 +7,28 @@ image:
 matrix:
   fast_finish: true
 
-environment:
-  matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      MINGW_DIR: mingw32
-      MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-posix/dwarf/i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z/download
-      MINGW_ARCHIVE: i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
-      NIM_URL: https://nim-lang.org/download/nim-0.18.0_x32.zip
-      NIM_ARCHIVE: nim-0.18.0_x32.zip
-      NIM_VERSION: nim-0.18.0
-      LIBSSH2_ARCHIVE: mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
-      LIBSSH2_ARCHIVE2: mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar
-      LIBSSH2_URL: https://sourceforge.net/projects/msys2/files/REPOS/MINGW/i686/mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz/download
-      LIBCRYPTO_ARCHIVE: mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
-      LIBCRYPTO_ARCHIVE2: mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar
-      LIBCRYPTO_URL: https://sourceforge.net/projects/msys2/files/REPOS/MINGW/i686/mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz/download
-      DLLS_URL: http://nim-lang.org/download/dlls.zip
-      DLLS_ARCHIVE: dlls.zip
-      BASE_DIR: c:\projects
-      platform: x86
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      NIM_URL: https://nim-lang.org/download/nim-0.18.0.tar.xz
-      NIM_ARCHIVE: nim-0.18.0.tar.xz
-      NIM_VERSION: nim-0.18.0
-
 for:
 -
   matrix:
     only:
       - image: Visual Studio 2017
+
+  environment:
+    MINGW_DIR: mingw32
+    MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-posix/dwarf/i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z/download
+    MINGW_ARCHIVE: i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
+    NIM_URL: https://nim-lang.org/download/nim-0.18.0_x32.zip
+    NIM_ARCHIVE: nim-0.18.0_x32.zip
+    NIM_VERSION: nim-0.18.0
+    LIBSSH2_ARCHIVE: mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
+    LIBSSH2_ARCHIVE2: mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar
+    LIBSSH2_URL: https://sourceforge.net/projects/msys2/files/REPOS/MINGW/i686/mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz/download
+    LIBCRYPTO_ARCHIVE: mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
+    LIBCRYPTO_ARCHIVE2: mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar
+    LIBCRYPTO_URL: https://sourceforge.net/projects/msys2/files/REPOS/MINGW/i686/mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz/download
+    DLLS_URL: http://nim-lang.org/download/dlls.zip
+    DLLS_ARCHIVE: dlls.zip
+    BASE_DIR: c:\projects
 
   install:
     - CD %BASE_DIR%
@@ -79,6 +72,11 @@ for:
   matrix:
     only:
       - image: Ubuntu
+
+  environment:
+    NIM_URL: https://nim-lang.org/download/nim-0.18.0.tar.xz
+    NIM_ARCHIVE: nim-0.18.0.tar.xz
+    NIM_VERSION: nim-0.18.0
 
   install:
     - if [ ! $NIM_ARCHIVE ]; then curl -o $NIM_ARCHIVE $NIM_URL; fi
