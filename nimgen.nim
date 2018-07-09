@@ -647,23 +647,25 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
     var noprocess = false
 
     for act in cfg.keys():
-      if cfg[act] == "true":
-        if act == "recurse":
-          c2nimConfig.recurse = true
-        elif act == "inline":
-          c2nimConfig.inline = true
-        elif act == "preprocess":
-          c2nimConfig.preprocess = true
-        elif act == "ctags":
-          c2nimConfig.ctags = true
-        elif act == "defines":
-          c2nimConfig.defines = true
-        elif act == "noprocess":
-          noprocess = true
-      elif act == "flags":
-        c2nimConfig.flags = cfg[act]
-      elif act == "ppflags":
-        c2nimConfig.ppflags = cfg[act]
+      let (action, val) = getKey(act)
+      if val == true:
+        if cfg[act] == "true":
+          if action == "recurse":
+            c2nimConfig.recurse = true
+          elif action == "inline":
+            c2nimConfig.inline = true
+          elif action == "preprocess":
+            c2nimConfig.preprocess = true
+          elif action == "ctags":
+            c2nimConfig.ctags = true
+          elif action == "defines":
+            c2nimConfig.defines = true
+          elif action == "noprocess":
+            noprocess = true
+        elif action == "flags":
+          c2nimConfig.flags = cfg[act]
+        elif action == "ppflags":
+          c2nimConfig.ppflags = cfg[act]
 
     if c2nimConfig.recurse and c2nimConfig.inline:
       echo "Cannot use recurse and inline simultaneously"
