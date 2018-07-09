@@ -1,8 +1,8 @@
 version: '{build}'
 
 image:
-  - Visual Studio 2017
   - Ubuntu
+  - Visual Studio 2017
 
 matrix:
   fast_finish: true
@@ -79,7 +79,9 @@ for:
     NIM_VERSION: nim-0.18.0
 
   install:
-    - if [ ! $NIM_ARCHIVE ]; then curl -o $NIM_ARCHIVE $NIM_URL; fi
+    - echo $NIM_ARCHIVE
+    - if [ ! -e $NIM_ARCHIVE ]; then curl -s -o $NIM_ARCHIVE $NIM_URL; fi
+    - echo $?
     - tar xJf $NIM_ARCHIVE
     - cd $NIM_VERSION
     - sh build.sh
