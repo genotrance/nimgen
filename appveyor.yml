@@ -90,7 +90,6 @@ for:
     - ./koch boot -d:release
     - ./koch nimble -d:release
     - export PATH=~/projects/$NIM_VERSION/bin:~/.nimble/bin:$PATH
-    - alias g++="g++ -std=c++11"
     - cd ~/projects/nimgen
 
   on_finish:
