@@ -79,6 +79,8 @@ for:
     NIM_VERSION: nim-0.18.0
 
   install:
+    - sudo apt update
+    - sudo apt install --yes python-pygments
     - cd ~/projects
     - if [ ! -e $NIM_ARCHIVE ]; then curl -s -o $NIM_ARCHIVE $NIM_URL; fi
     - tar xJf $NIM_ARCHIVE
