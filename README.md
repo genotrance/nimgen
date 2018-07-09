@@ -30,13 +30,16 @@ __Capabilities & Limitations__
 
 Nimgen supports compiling in C/C++ sources and static libraries as well as loading in dynamic libraries.
 
-Environment variables are supported via Nim's string interpolation `%` symbol imported from the `strutils` module. Simply use double quotes to enclose any value and put `${}` around the environment variable name. In addition, the `output` var from the n.global section is available as ${output}. For example:
+Environment variables are supported via Nim's string interpolation `%` symbol imported from the `strutils` module. Simply use double quotes to enclose any value and put `$` or `${}` around the environment variable name. In addition, the `output` var from the n.global section is available as ${output}. For example:
 
     [n.global]
+    c_compiler="$CC"
+    cpp_compiler="${CPP}-arm"
     output="src/path"
 
     [n.include]
     "${output}/library/include"
+    "${MY_INCLUDE_PATH}/include"
 
 To see examples of nimgen in action check out the following wrappers:-
 * Link with a dynamic library
