@@ -1,7 +1,7 @@
 version: '{build}'
 
 cache:
-- i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
+- i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
 - nim-0.18.0_x32.zip
 # - dlls.zip
 
@@ -11,8 +11,8 @@ matrix:
 environment:
   matrix:
     - MINGW_DIR: mingw32
-      MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.9.2/threads-win32/dwarf/i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z/download
-      MINGW_ARCHIVE: i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
+      MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-posix/dwarf/i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z/download
+      MINGW_ARCHIVE: i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
       NIM_URL: https://nim-lang.org/download/nim-0.18.0_x32.zip
       NIM_ARCHIVE: nim-0.18.0_x32.zip
       NIM_VERSION: nim-0.18.0
