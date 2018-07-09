@@ -26,7 +26,7 @@ install:
   - 7z x -y "%MINGW_ARCHIVE%" -o"%CD%\DIST"> nul
   - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
   - 7z x -y "%NIM_ARCHIVE%" -o"%CD%\DIST"> nul
-  - SET PATH=%CD%\DIST\%MINGW_DIR%\BIN;%CD%\DIST\%NIM_VERSION%;%USERPROFILE%\.nimble\bin;%PATH%
+  - SET PATH=%CD%\DIST\%MINGW_DIR%\BIN;%CD%\DIST\%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
   # - git clone --depth 1 https://github.com/nim-lang/nim
   # - cd nim
   # - git clone --depth 1 https://github.com/nim-lang/csources
