@@ -1,5 +1,11 @@
 import nre, os, ospaths, osproc, parsecfg, pegs, ropes, sequtils, streams, strutils, tables
 
+const
+  C_COMPILER_ENV = "CC"
+  CPP_COMPILER_ENV = "CPP"
+  DEFAULT_C_COMPILER = "gcc"
+  DEFAULT_CPP_COMPILER = "g++"
+
 var
   gDoneRecursive: seq[string] = @[]
   gDoneInline: seq[string] = @[]
@@ -8,8 +14,8 @@ var
   gConfig: Config
   gFilter = ""
   gQuotes = true
-  gCppCompiler = "g++"
-  gCCompiler = "gcc"
+  gCppCompiler = getEnv(CPP_COMPILER_ENV, DEFAULT_C_COMPILER)
+  gCCompiler = getEnv(C_COMPILER_ENV, DEFAULT_CPP_COMPILER)
   gOutput = ""
   gIncludes: seq[string] = @[]
   gExcludes: seq[string] = @[]
@@ -719,8 +725,15 @@ proc runCfg(cfg: string) =
 
     if gConfig["n.global"].hasKey("cpp_compiler"):
       gCppCompiler = gConfig["n.global"]["cpp_compiler"]
+    else:
+      # Reset on a per project basis
+      gCppCompiler = getEnv(CPP_COMPILER_ENV, DEFAULT_CPP_COMPILER)
+
     if gConfig["n.global"].hasKey("c_compiler"):
       gCCompiler = gConfig["n.global"]["c_compiler"]
+    else:
+      # Reset on a per project basis
+      gCCompiler = getEnv(C_COMPILER_ENV, DEFAULT_C_COMPILER)
 
     if gConfig["n.global"].hasKey("filter"):
       gFilter = gConfig["n.global"]["filter"]
