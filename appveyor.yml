@@ -1,17 +1,16 @@
 version: '{build}'
 
-cache:
-- c:\projects\i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
-- c:\projects\mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
-- c:\projects\mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
-- c:\projects\nim-0.18.0_x32.zip
+image:
+  - Visual Studio 2017
+  - Ubuntu
 
 matrix:
   fast_finish: true
 
 environment:
   matrix:
-    - MINGW_DIR: mingw32
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      MINGW_DIR: mingw32
       MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-posix/dwarf/i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z/download
       MINGW_ARCHIVE: i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
       NIM_URL: https://nim-lang.org/download/nim-0.18.0_x32.zip
@@ -27,34 +26,80 @@ environment:
       DLLS_ARCHIVE: dlls.zip
       BASE_DIR: c:\projects
       platform: x86
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      NIM_URL: https://nim-lang.org/download/nim-0.18.0.tar.xz
+      NIM_ARCHIVE: nim-0.18.0.tar.xz
+      NIM_VERSION: nim-0.18.0
 
-install:
-  - CD %BASE_DIR%
-  - IF not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
-  - 7z x -y "%MINGW_ARCHIVE%"> nul
-  - IF not exist "%LIBSSH2_ARCHIVE%" appveyor DownloadFile "%LIBSSH2_URL%" -FileName "%LIBSSH2_ARCHIVE%"
-  - 7z x -y "%LIBSSH2_ARCHIVE%"> nul
-  - 7z x -y "%LIBSSH2_ARCHIVE2%"> nul
-  - IF not exist "%LIBCRYPTO_ARCHIVE%" appveyor DownloadFile "%LIBCRYPTO_URL%" -FileName "%LIBCRYPTO_ARCHIVE%"
-  - 7z x -y "%LIBCRYPTO_ARCHIVE%"> nul
-  - 7z x -y "%LIBCRYPTO_ARCHIVE2%"> nul
-  - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
-  - 7z x -y "%NIM_ARCHIVE%"> nul
-  - SET PATH=%BASE_DIR%\%MINGW_DIR%\bin;%BASE_DIR%\%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
-  - CD %BASE_DIR%\nimgen
-  # - git clone --depth 1 https://github.com/nim-lang/nim
-  # - cd nim
-  # - git clone --depth 1 https://github.com/nim-lang/csources
-  # - cd csources
-  # - IF "%PLATFORM%" == "x64" ( build64.bat ) else ( build.bat )
-  # - cd ..
-  # - IF not exist "%DLLS_ARCHIVE%" appveyor DownloadFile "%DLLS_URL%" -FileName "%DLLS_ARCHIVE%"
-  # - 7z x -y "%DLLS_ARCHIVE%" -o"%CD%\bin"> nul
-  # - bin\nim c -d:release koch
-  # - koch boot -d:release
-  # - koch nimble -d:release
-  # - SET PATH=%CD%\bin;%PATH%
-  # - cd ..
+for:
+-
+  matrix:
+    only:
+      - image: Visual Studio 2017
+
+  install:
+    - CD %BASE_DIR%
+    - IF not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
+    - 7z x -y "%MINGW_ARCHIVE%"> nul
+    - IF not exist "%LIBSSH2_ARCHIVE%" appveyor DownloadFile "%LIBSSH2_URL%" -FileName "%LIBSSH2_ARCHIVE%"
+    - 7z x -y "%LIBSSH2_ARCHIVE%"> nul
+    - 7z x -y "%LIBSSH2_ARCHIVE2%"> nul
+    - IF not exist "%LIBCRYPTO_ARCHIVE%" appveyor DownloadFile "%LIBCRYPTO_URL%" -FileName "%LIBCRYPTO_ARCHIVE%"
+    - 7z x -y "%LIBCRYPTO_ARCHIVE%"> nul
+    - 7z x -y "%LIBCRYPTO_ARCHIVE2%"> nul
+    - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
+    - 7z x -y "%NIM_ARCHIVE%"> nul
+    - SET PATH=%BASE_DIR%\%MINGW_DIR%\bin;%BASE_DIR%\%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
+    - CD %BASE_DIR%\nimgen
+    # - git clone --depth 1 https://github.com/nim-lang/nim
+    # - cd nim
+    # - git clone --depth 1 https://github.com/nim-lang/csources
+    # - cd csources
+    # - IF "%PLATFORM%" == "x64" ( build64.bat ) else ( build.bat )
+    # - cd ..
+    # - IF not exist "%DLLS_ARCHIVE%" appveyor DownloadFile "%DLLS_URL%" -FileName "%DLLS_ARCHIVE%"
+    # - 7z x -y "%DLLS_ARCHIVE%" -o"%CD%\bin"> nul
+    # - bin\nim c -d:release koch
+    # - koch boot -d:release
+    # - koch nimble -d:release
+    # - SET PATH=%CD%\bin;%PATH%
+    # - cd ..
+
+  on_finish:
+    - 7z a -r buildlogs-win.zip %USERPROFILE%\.nimble\pkgs
+    - appveyor PushArtifact buildlogs-win.zip
+
+  cache:
+    - c:\projects\i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
+    - c:\projects\mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
+    - c:\projects\mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
+    - c:\projects\nim-0.18.0_x32.zip
+
+for:
+-
+  matrix:
+    only:
+      - image: Ubuntu
+
+  install:
+    - if [ ! $NIM_ARCHIVE ]; then curl -o $NIM_ARCHIVE $NIM_URL; fi
+    - tar xJf $NIM_ARCHIVE
+    - cd $NIM_VERSION
+    - sh build.sh
+    - bin/nim -d:release koch
+    - ./koch boot -d:release
+    - ./koch nimble -d:release
+    - set PATH=`pwd`/bin:~/.nimble/bin:$PATH
+    - cd ..
+    - echo `pwd`
+    - ls
+
+  on_finish:
+    - zip buildlogs-lin.zip ~/.nimble/pkgs
+    - appveyor PushArtifact buildlogs-lin.zip
+
+  cache:
+  - nim-0.18.0.tar.xz
 
 build_script:
   - nimble install -y
@@ -63,7 +108,3 @@ test_script:
   - nimble test
 
 deploy: off
-
-on_finish:
-  - 7z a -r buildlogs.zip %USERPROFILE%\.nimble\pkgs
-  - appveyor PushArtifact buildlogs.zip
