@@ -1,10 +1,10 @@
 version: '{build}'
 
 cache:
-- i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
-- nim-0.18.0_x32.zip
-- libssh2-1.8.0-1-i686.pkg.tar.xz
-# - dlls.zip
+- c:\projects\i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
+- c:\projects\mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
+- c:\projects\mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
+- c:\projects\nim-0.18.0_x32.zip
 
 matrix:
   fast_finish: true
@@ -32,14 +32,14 @@ install:
   - CD %BASE_DIR%
   - IF not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
   - 7z x -y "%MINGW_ARCHIVE%"> nul
-  - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
-  - 7z x -y "%NIM_ARCHIVE%"> nul
   - IF not exist "%LIBSSH2_ARCHIVE%" appveyor DownloadFile "%LIBSSH2_URL%" -FileName "%LIBSSH2_ARCHIVE%"
   - 7z x -y "%LIBSSH2_ARCHIVE%"> nul
   - 7z x -y "%LIBSSH2_ARCHIVE2%"> nul
   - IF not exist "%LIBCRYPTO_ARCHIVE%" appveyor DownloadFile "%LIBCRYPTO_URL%" -FileName "%LIBCRYPTO_ARCHIVE%"
   - 7z x -y "%LIBCRYPTO_ARCHIVE%"> nul
   - 7z x -y "%LIBCRYPTO_ARCHIVE2%"> nul
+  - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
+  - 7z x -y "%NIM_ARCHIVE%"> nul
   - SET PATH=%BASE_DIR%\%MINGW_DIR%\bin;%BASE_DIR%\%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
   - CD %BASE_DIR%\nimgen
   # - git clone --depth 1 https://github.com/nim-lang/nim
