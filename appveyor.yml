@@ -47,8 +47,8 @@ build_script:
 test_script:
   - nimble test
 
-after_build:
-  - 7z a -r buildlogs.zip %APPVEYOR_BUILD_FOLDER%
-  - appveyor PushArtifact buildlogs.zip
-
 deploy: off
+
+on_finish:
+  - 7z a -r buildlogs.zip %USERPROFILE%\.nimble\pkgs
+  - appveyor PushArtifact buildlogs.zip
