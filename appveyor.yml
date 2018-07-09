@@ -18,15 +18,16 @@ environment:
       NIM_VERSION: nim-0.18.0
       DLLS_URL: http://nim-lang.org/download/dlls.zip
       DLLS_ARCHIVE: dlls.zip
+      BASE_DIR: c:\projects
       platform: x86
 
 install:
-  - MKDIR %CD%\DIST
+  - CD %BASE_DIR%
   - IF not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
-  - 7z x -y "%MINGW_ARCHIVE%" -o"%CD%\DIST"> nul
+  - 7z x -y "%MINGW_ARCHIVE%"> nul
   - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
-  - 7z x -y "%NIM_ARCHIVE%" -o"%CD%\DIST"> nul
-  - SET PATH=%CD%\DIST\%MINGW_DIR%\BIN;%CD%\DIST\%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
+  - 7z x -y "%NIM_ARCHIVE%"> nul
+  - SET PATH=%BASE_DIR%\%MINGW_DIR%\BIN;%BASE_DIR%\%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
   # - git clone --depth 1 https://github.com/nim-lang/nim
   # - cd nim
   # - git clone --depth 1 https://github.com/nim-lang/csources
