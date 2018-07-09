@@ -1,10 +1,10 @@
 import nre, os, ospaths, osproc, parsecfg, pegs, ropes, sequtils, streams, strutils, tables
 
 const
-  C_COMPILER_ENV = "CC"
-  CPP_COMPILER_ENV = "CPP"
-  DEFAULT_C_COMPILER = "gcc"
-  DEFAULT_CPP_COMPILER = "g++"
+  cCompilerEnv = "CC"
+  cppCompilerEnv = "CPP"
+  defaultCCompiler = "gcc"
+  defaultCppCompiler = "g++"
 
 var
   gDoneRecursive: seq[string] = @[]
@@ -14,8 +14,8 @@ var
   gConfig: Config
   gFilter = ""
   gQuotes = true
-  gCppCompiler = getEnv(CPP_COMPILER_ENV, DEFAULT_C_COMPILER)
-  gCCompiler = getEnv(C_COMPILER_ENV, DEFAULT_CPP_COMPILER)
+  gCppCompiler = getEnv(cppCompilerEnv, defaultCCompiler)
+  gCCompiler = getEnv(cCompilerEnv, defaultCppCompiler)
   gOutput = ""
   gIncludes: seq[string] = @[]
   gExcludes: seq[string] = @[]
@@ -727,13 +727,13 @@ proc runCfg(cfg: string) =
       gCppCompiler = gConfig["n.global"]["cpp_compiler"]
     else:
       # Reset on a per project basis
-      gCppCompiler = getEnv(CPP_COMPILER_ENV, DEFAULT_CPP_COMPILER)
+      gCppCompiler = getEnv(cppCompilerEnv, defaultCppCompiler)
 
     if gConfig["n.global"].hasKey("c_compiler"):
       gCCompiler = gConfig["n.global"]["c_compiler"]
     else:
       # Reset on a per project basis
-      gCCompiler = getEnv(C_COMPILER_ENV, DEFAULT_C_COMPILER)
+      gCCompiler = getEnv(cCompilerEnv, defaultCCompiler)
 
     if gConfig["n.global"].hasKey("filter"):
       gFilter = gConfig["n.global"]["filter"]
