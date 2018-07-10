@@ -118,6 +118,14 @@ The following keys can be used to prepare dependencies such as downloading ZIP f
 
 ```copy``` = copy a file to another location. Preferred over moving to preserve original. Comma separate for multiple entries. E.g. copy = "output/config.h.in=output/config.h"
 
+_[n.post]_
+
+This section is the same as the prepare section, but for performing actions after the project has been processed.
+
+```reset``` = whether or not to perform a git reset on all files after processing [default: false]
+
+```execute``` = command to run after processing
+
 _[n.wildcard]_
 
 File wildcards such as *.nim, ssl*.h, etc. can be used to perform tasks across a group of files. This is useful to define common operations such as global text replacements without having to specify an explicit section for every single file. These operations will be performed on every matching file that is defined as a _sourcefile_ or recursed files. Only applies on source files following the wildcard declarations.
