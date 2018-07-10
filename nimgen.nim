@@ -225,8 +225,7 @@ proc search(file: string): string =
       quit(1)
 
   # Only keep relative directory
-  result = result.replace(gProjectDir & $DirSep, "")
-  return result.replace(re"[\\/]", $DirSep)
+  return result.multiReplace([("\\", $DirSep), ("//", $DirSep), (gProjectDir & $DirSep, "")])
 
 # ###
 # Loading / unloading
@@ -389,7 +388,7 @@ proc getIncls(file: string, inline=false): seq[string] =
           # OSError if the file does not exist
           let
             finc = expandFileName(curPath / addInc)
-            fname = extractFileName(finc).search()
+            fname = finc.replace(curPath & $DirSep, "")
 
           if fname.len() > 0:
             # only add if the file is non-empty
