@@ -25,7 +25,7 @@ var
 type
   c2nimConfigObj = object
     flags, ppflags: string
-    recurse, inline, preprocess, ctags, defines, remove_static: bool
+    recurse, inline, preprocess, ctags, defines, removeStatic: bool
     dynlib, compile, pragma: seq[string]
 
 const DOC = """
@@ -125,6 +125,16 @@ proc gitReset() =
   defer: setCurrentDir(gProjectDir)
 
   discard execProc("git reset --hard HEAD")
+
+proc gitCheckout(filename: string) =
+  echo "Resetting file: $#" % [filename]
+
+  setCurrentDir(gOutput)
+  defer: setCurrentDir(gProjectDir)
+
+  let adjustedFile = filename.replace(gOutput & $DirSep, "")
+
+  discard execProc("git checkout $#" % [adjustedFile])
 
 proc gitRemotePull(url: string, pull=true) =
   if dirExists(gOutput/".git"):
@@ -528,7 +538,7 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   if c2nimConfig.defines and (c2nimConfig.preprocess or c2nimConfig.ctags):
     prepend(cfile, getDefines(file, c2nimConfig.inline))
 
-  if c2nimConfig.remove_static:
+  if c2nimConfig.removeStatic:
     removeStatic(cfile)
 
   var
@@ -659,6 +669,9 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       if action == "create":
         createDir(file.splitPath().head)
         writeFile(file, cfg[act])
+      elif action == "removestatic":
+        removeStatic(sfile)
+        c2nimConfig.removeStatic = true
       elif action in @["prepend", "append", "replace", "comment",
                        "rename", "compile", "dynlib", "pragma",
                        "pipe"] and sfile != "":
@@ -709,8 +722,6 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
             c2nimConfig.ctags = true
           elif action == "defines":
             c2nimConfig.defines = true
-          elif act == "remove_static":
-            c2nimConfig.remove_static = true
           elif action == "noprocess":
             noprocess = true
         elif action == "flags":
@@ -724,6 +735,9 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
 
     if not noprocess:
       c2nim(file, getNimout(sfile), c2nimConfig)
+
+    if c2nimConfig.removeStatic:
+      gitCheckout(sfile)
 
 proc runCfg(cfg: string) =
   if not fileExists(cfg):
