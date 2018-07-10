@@ -224,7 +224,8 @@ proc search(file: string): string =
       echo "File doesn't exist: " & file
       quit(1)
 
-  return result.replace(re"[\\/]", $DirSep)
+  # Only keep relative directory
+  return result.multiReplace([("\\", $DirSep), ("//", $DirSep), (gProjectDir & $DirSep, "")])
 
 # ###
 # Loading / unloading
@@ -376,12 +377,25 @@ proc getIncls(file: string, inline=false): seq[string] =
   if inline and file in gDoneInline:
     return
 
+  let curPath = splitFile(expandFileName(file)).dir
   withFile(file):
     for f in content.findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
       var inc = f.captures[0].strip()
       if ((gQuotes and inc.contains("\"")) or (gFilter != "" and gFilter in inc)) and (not exclude(inc)):
-        result.add(
-          inc.replace(re"""[<>"]""", "").replace(re"\/[\*\/].*$", "").strip())
+        let addInc = inc.replace(re"""[<>"]""", "").replace(re"\/[\*\/].*$", "").strip()
+        try:
+          # Try searching for a local library. expandFilename will throw
+          # OSError if the file does not exist
+          let
+            finc = expandFileName(curPath / addInc)
+            fname = finc.replace(curPath & $DirSep, "")
+
+          if fname.len() > 0:
+            # only add if the file is non-empty
+            result.add(fname.search())
+        except OSError:
+          # If it's a system library
+          result.add(addInc)
 
     result = result.deduplicate()
 
