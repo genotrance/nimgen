@@ -92,7 +92,9 @@ proc execProc(cmd: string): string =
 proc extractZip(zipfile: string) =
   var cmd = "unzip -o $#"
   if defined(Windows):
-    cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
+    cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A " &
+          "'System.IO.Compression.FileSystem'; " &
+          "[IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
 
   setCurrentDir(gOutput)
   defer: setCurrentDir(gProjectDir)
@@ -123,6 +125,16 @@ proc gitReset() =
   defer: setCurrentDir(gProjectDir)
 
   discard execProc("git reset --hard HEAD")
+
+proc gitCheckout(filename: string) {.used.} =
+  echo "Resetting file: $#" % [filename]
+
+  setCurrentDir(gOutput)
+  defer: setCurrentDir(gProjectDir)
+
+  let adjustedFile = filename.replace(gOutput & $DirSep, "")
+
+  discard execProc("git checkout $#" % [adjustedFile])
 
 proc gitRemotePull(url: string, pull=true) =
   if dirExists(gOutput/".git"):
@@ -322,6 +334,36 @@ proc comment(file: string, pattern: string, numlines: string) =
           if content[idx] == '\L':
             idx += 1
             break
+
+proc removeStatic(filename: string) =
+  ## Replace static function bodies with a semicolon and commented
+  ## out body
+  withFile(filename):
+    content = content.replace(
+      re"(?m)(static inline.*?\))(\s*\{(\s*?.*?$)*[\n\r]\})",
+      proc (match: RegexMatch): string =
+        let funcDecl = match.captures[0]
+        let body = match.captures[1].strip()
+        result = ""
+
+        result.add("$#;" % [funcDecl])
+        result.add(body.replace(re"(?m)^", "//"))
+    )
+
+proc reAddStatic(filename: string) =
+  ## Uncomment out the body and remove the semicolon. Undoes
+  ## removeStatic
+  withFile(filename):
+    content = content.replace(
+      re"(?m)(static inline.*?\));(\/\/\s*\{(\s*?.*?$)*[\n\r]\/\/\})",
+      proc (match: RegexMatch): string =
+        let funcDecl = match.captures[0]
+        let body = match.captures[1].strip()
+        result = ""
+
+        result.add("$# " % [funcDecl])
+        result.add(body.replace(re"(?m)^\/\/", ""))
+    )
 
 proc rename(file: string, renfile: string) =
   if file.splitFile().ext == ".nim":
@@ -722,8 +764,14 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       echo "Cannot use recurse and inline simultaneously"
       quit(1)
 
+    # Remove static inline function bodies
+    removeStatic(sfile)
+
     if not noprocess:
       c2nim(file, getNimout(sfile), c2nimConfig)
+
+    # Add them back for compilation
+    reAddStatic(sfile)
 
 proc runCfg(cfg: string) =
   if not fileExists(cfg):
