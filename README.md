@@ -138,8 +138,6 @@ The following keys apply to library source code and help with generating the .ni
 
 ```defines``` = pulls out simple #defines of ints, floats and hex values for separate conversion [default: false] - works only when preprocess or ctags is used and helps include useful definitions in generated .nim file
 
-```removestatic``` = pulls out the bodies of inline static functions [default: false]
-
 ```flags``` = flags to pass to the c2nim process in "quotes" [default: --stdcall]. --cdecl, --assumedef, --assumendef may be useful
 
 ```ppflags``` = flags to pass to the preprocessor [default: ""]. -D for gcc and others may be useful
