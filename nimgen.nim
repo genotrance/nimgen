@@ -1,4 +1,4 @@
-import nre, os, ospaths, osproc, parsecfg, pegs, ropes, sequtils, streams, strutils, tables
+import os, ospaths, osproc, parsecfg, pegs, regex, ropes, sequtils, streams, strutils, tables
 
 var
   gDoneRecursive: seq[string] = @[]
@@ -255,10 +255,11 @@ proc freplace(file: string, pattern: string, repl="") =
 
 proc freplace(file: string, pattern: Regex, repl="") =
   withFile(file):
-    if content.find(pattern).isSome():
+    var m: RegexMatch
+    if content.find(pattern, m):
       if "$#" in repl:
-        for m in content.findIter(pattern):
-          content = content.replace(m.match, repl % m.captures[0])
+        content = content.replace(pattern,
+          proc (m: RegexMatch, s: string): string = repl % s[m.group(0)[0]])
       else:
         content = content.replace(pattern, repl)
 
@@ -328,10 +329,11 @@ proc compile(dir="", file=""): string =
 
 proc fixFuncProtos(file: string) =
   withFile(file):
-    for fp in content.findIter(re"(?m)(^.*?)[ ]*\(\*(.*?)\((.*?)\)\)[ \r\n]*\((.*?[\r\n]*.*?)\);"):
-      var tdout = "typedef $# (*type_$#)($#);\n" % [fp.captures[0], fp.captures[1], fp.captures[3]] &
-        "type_$# $#($#);" % [fp.captures[1], fp.captures[1], fp.captures[2]]
-      content = content.replace(fp.match, tdout)
+    content = content.replace(re"(?m)(^.*?)[ ]*\(\*(.*?)\((.*?)\)\)[ \r\n]*\((.*?[\r\n]*.*?)\);",
+      proc (m: RegexMatch, s: string): string =
+        (("typedef $# (*type_$#)($#);\n" % [s[m.group(0)[0]], s[m.group(1)[0]], s[m.group(3)[0]]]) &
+         ("type_$# $#($#);" % [s[m.group(1)[0]], s[m.group(1)[0]], s[m.group(2)[0]]]))
+    )
 
 # ###
 # Convert to Nim
@@ -342,8 +344,8 @@ proc getIncls(file: string, inline=false): seq[string] =
     return
 
   withFile(file):
-    for f in content.findIter(re"(?m)^\s*#\s*include\s+(.*?)$"):
-      var inc = f.captures[0].strip()
+    for f in content.findAll(re"(?m)^\s*#\s*include\s+(.*?)$"):
+      var inc = content[f.group(0)[0]].strip()
       if ((gQuotes and inc.contains("\"")) or (gFilter != "" and gFilter in inc)) and (not exclude(inc)):
         result.add(
           inc.replace(re"""[<>"]""", "").replace(re"\/[\*\/].*$", "").strip())
@@ -374,8 +376,8 @@ proc getDefines(file: string, inline=false): string =
         echo "Inlining " & sincl
         result &= getDefines(sincl)
   withFile(file):
-    for def in content.findIter(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d\-.xf]+)(?:\r|//|/*).*?$"):
-      result &= def.captures[0] & "\n"
+    for def in content.findAll(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d\-.xf]+)(?:\r|//|/*).*?$"):
+      result &= content[def.group(0)[0]] & "\n"
 
 proc runPreprocess(file, ppflags, flags: string, inline: bool): string =
   var
@@ -428,9 +430,9 @@ proc runCtags(file: string): string =
     if spl.len() > 4:
       if spl[0] != "main" and spl[3] != "member":
         var fn = ""
-        var match = spl[2].find(re"/\^(.*?)\(")
-        if match.isSome():
-          fn = match.get().captures[0]
+        var match: RegexMatch
+        if spl[2].find(re"/\^(.*?)\(", match):
+          fn = spl[2][match.group(0)[0]]
           fn &= spl[4].replace("signature:", "") & ";"
           fdata &= fn & "\n"
 
@@ -559,7 +561,7 @@ proc c2nim(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     prepend(outfile, incout)
 
   # Nim doesn't like {.cdecl.} for type proc()
-  freplace(outfile, re"(?m)(.*? = proc.*?){.cdecl.}", "$#")
+  freplace(outfile, re"(?m)(.*? = proc.*?)\{.cdecl.\}", "$#")
   freplace(outfile, " {.cdecl.})", ")")
 
   # Include {.compile.} directives
@@ -591,8 +593,9 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
     sfile = search(file)
 
   for pattern in gWildcards.keys():
+    var match: RegexMatch
     let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
-    if file.find(re(pat)).isSome():
+    if file.find(toPattern(pat), match):
       echo "Appending " & file & " " & pattern
       for key in gWildcards[pattern].keys():
         cfg[key & "." & pattern] = gWildcards[pattern][key]

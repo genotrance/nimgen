@@ -9,7 +9,7 @@ skipDirs = @["tests"]
 
 # Dependencies
 
-requires "nim >= 0.17.0", "c2nim >= 0.9.13"
+requires "nim >= 0.17.0", "c2nim >= 0.9.13", "regex >= 0.7.1"
 
 bin = @["nimgen"]
 
