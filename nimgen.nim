@@ -342,9 +342,9 @@ proc removeStatic(filename: string) =
   withFile(filename):
     content = content.replace(
       re"(?m)(static inline.*?\))(\s*\{(\s*?.*?$)*[\n\r]\})",
-      proc (match: RegexMatch): string =
-        let funcDecl = match.captures[0]
-        let body = match.captures[1].strip()
+      proc (m: RegexMatch, s: string): string =
+        let funcDecl = s[m.group(0)[0]]
+        let body = s[m.group(1)[0]].strip()
         result = ""
 
         result.add("$#;" % [funcDecl])
@@ -357,9 +357,9 @@ proc reAddStatic(filename: string) =
   withFile(filename):
     content = content.replace(
       re"(?m)(static inline.*?\));(\/\/\s*\{(\s*?.*?$)*[\n\r]\/\/\})",
-      proc (match: RegexMatch): string =
-        let funcDecl = match.captures[0]
-        let body = match.captures[1].strip()
+      proc (m: RegexMatch, s: string): string =
+        let funcDecl = s[m.group(0)[0]]
+        let body = s[m.group(1)[0]].strip()
         result = ""
 
         result.add("$# " % [funcDecl])
