@@ -1,5 +1,11 @@
 import os, ospaths, osproc, parsecfg, pegs, regex, ropes, sequtils, streams, strutils, tables
 
+const
+  cCompilerEnv = "CC"
+  cppCompilerEnv = "CPP"
+  defaultCCompiler = "gcc"
+  defaultCppCompiler = "g++"
+
 var
   gDoneRecursive: seq[string] = @[]
   gDoneInline: seq[string] = @[]
@@ -8,6 +14,8 @@ var
   gConfig: Config
   gFilter = ""
   gQuotes = true
+  gCppCompiler = getEnv(cppCompilerEnv, defaultCCompiler)
+  gCCompiler = getEnv(cCompilerEnv, defaultCppCompiler)
   gOutput = ""
   gIncludes: seq[string] = @[]
   gExcludes: seq[string] = @[]
@@ -33,6 +41,33 @@ Options:
 # ###
 # Helpers
 
+proc addEnv(str: string): string =
+  var newStr = str
+  for pair in envPairs():
+    try:
+      newStr = newStr % [pair.key, pair.value.string]
+    except ValueError:
+      # Ignore if there are no values to replace. We
+      # want to continue anyway
+      discard
+
+  try:
+    newStr = newStr % ["output", gOutput]
+  except ValueError:
+    # Ignore if there are no values to replace. We
+    # want to continue anyway
+    discard
+
+  # if there are still format args, print a warning
+  if newStr.contains("${"):
+    echo "WARNING: \"", newStr, "\" still contains an uninterpolated value!"
+
+  return newStr
+
+proc `[]`(table: OrderedTableRef[string, string], key: string): string =
+  ## Gets table values with env vars inserted
+  tables.`[]`(table, key).addEnv
+
 proc execProc(cmd: string): string =
   result = ""
   var
@@ -57,7 +92,9 @@ proc execProc(cmd: string): string =
 proc extractZip(zipfile: string) =
   var cmd = "unzip -o $#"
   if defined(Windows):
-    cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
+    cmd = "powershell -nologo -noprofile -command \"& { Add-Type -A " &
+          "'System.IO.Compression.FileSystem'; " &
+          "[IO.Compression.ZipFile]::ExtractToDirectory('$#', '.'); }\""
 
   setCurrentDir(gOutput)
   defer: setCurrentDir(gProjectDir)
@@ -88,6 +125,16 @@ proc gitReset() =
   defer: setCurrentDir(gProjectDir)
 
   discard execProc("git reset --hard HEAD")
+
+proc gitCheckout(filename: string) {.used.} =
+  echo "Resetting file: $#" % [filename]
+
+  setCurrentDir(gOutput)
+  defer: setCurrentDir(gProjectDir)
+
+  let adjustedFile = filename.replace(gOutput & $DirSep, "")
+
+  discard execProc("git checkout $#" % [adjustedFile])
 
 proc gitRemotePull(url: string, pull=true) =
   if dirExists(gOutput/".git"):
@@ -189,7 +236,8 @@ proc search(file: string): string =
       echo "File doesn't exist: " & file
       quit(1)
 
-  return result.replace(re"[\\/]", $DirSep)
+  # Only keep relative directory
+  return result.multiReplace([("\\", $DirSep), ("//", $DirSep), (gProjectDir & $DirSep, "")])
 
 # ###
 # Loading / unloading
@@ -288,6 +336,36 @@ proc comment(file: string, pattern: string, numlines: string) =
             idx += 1
             break
 
+proc removeStatic(filename: string) =
+  ## Replace static function bodies with a semicolon and commented
+  ## out body
+  withFile(filename):
+    content = content.replace(
+      re"(?m)(static inline.*?\))(\s*\{(\s*?.*?$)*[\n\r]\})",
+      proc (match: RegexMatch): string =
+        let funcDecl = match.captures[0]
+        let body = match.captures[1].strip()
+        result = ""
+
+        result.add("$#;" % [funcDecl])
+        result.add(body.replace(re"(?m)^", "//"))
+    )
+
+proc reAddStatic(filename: string) =
+  ## Uncomment out the body and remove the semicolon. Undoes
+  ## removeStatic
+  withFile(filename):
+    content = content.replace(
+      re"(?m)(static inline.*?\));(\/\/\s*\{(\s*?.*?$)*[\n\r]\/\/\})",
+      proc (match: RegexMatch): string =
+        let funcDecl = match.captures[0]
+        let body = match.captures[1].strip()
+        result = ""
+
+        result.add("$# " % [funcDecl])
+        result.add(body.replace(re"(?m)^\/\/", ""))
+    )
+
 proc rename(file: string, renfile: string) =
   if file.splitFile().ext == ".nim":
     return
@@ -343,12 +421,25 @@ proc getIncls(file: string, inline=false): seq[string] =
   if inline and file in gDoneInline:
     return
 
+  let curPath = splitFile(expandFileName(file)).dir
   withFile(file):
     for f in content.findAll(re"(?m)^\s*#\s*include\s+(.*?)$"):
       var inc = content[f.group(0)[0]].strip()
       if ((gQuotes and inc.contains("\"")) or (gFilter != "" and gFilter in inc)) and (not exclude(inc)):
-        result.add(
-          inc.replace(re"""[<>"]""", "").replace(re"\/[\*\/].*$", "").strip())
+        let addInc = inc.replace(re"""[<>"]""", "").replace(re"\/[\*\/].*$", "").strip()
+        try:
+          # Try searching for a local library. expandFilename will throw
+          # OSError if the file does not exist
+          let
+            finc = expandFileName(curPath / addInc)
+            fname = finc.replace(curPath & $DirSep, "")
+
+          if fname.len() > 0:
+            # only add if the file is non-empty
+            result.add(fname.search())
+        except OSError:
+          # If it's a system library
+          result.add(addInc)
 
     result = result.deduplicate()
 
@@ -381,7 +472,7 @@ proc getDefines(file: string, inline=false): string =
 
 proc runPreprocess(file, ppflags, flags: string, inline: bool): string =
   var
-    pproc = if flags.contains("cpp"): "g++" else: "gcc"
+    pproc = if flags.contains("cpp"): gCppCompiler else: gCCompiler
     cmd = "$# -E $# $#" % [pproc, ppflags, file]
 
   for inc in gIncludes:
@@ -615,7 +706,9 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       if action == "create":
         createDir(file.splitPath().head)
         writeFile(file, cfg[act])
-      elif action in @["prepend", "append", "replace", "comment", "rename", "compile", "dynlib", "pragma", "pipe"] and sfile != "":
+      elif action in @["prepend", "append", "replace", "comment",
+                       "rename", "compile", "dynlib", "pragma",
+                       "pipe"] and sfile != "":
         if action == "prepend":
           if srch != "":
             prepend(sfile, cfg[act], cfg[srch])
@@ -674,8 +767,14 @@ proc runFile(file: string, cfgin: OrderedTableRef) =
       echo "Cannot use recurse and inline simultaneously"
       quit(1)
 
+    # Remove static inline function bodies
+    removeStatic(sfile)
+
     if not noprocess:
       c2nim(file, getNimout(sfile), c2nimConfig)
+
+    # Add them back for compilation
+    reAddStatic(sfile)
 
 proc runCfg(cfg: string) =
   if not fileExists(cfg):
@@ -705,6 +804,18 @@ proc runCfg(cfg: string) =
               quit(1)
       createDir(gOutput)
 
+    if gConfig["n.global"].hasKey("cpp_compiler"):
+      gCppCompiler = gConfig["n.global"]["cpp_compiler"]
+    else:
+      # Reset on a per project basis
+      gCppCompiler = getEnv(cppCompilerEnv, defaultCppCompiler)
+
+    if gConfig["n.global"].hasKey("c_compiler"):
+      gCCompiler = gConfig["n.global"]["c_compiler"]
+    else:
+      # Reset on a per project basis
+      gCCompiler = getEnv(cCompilerEnv, defaultCCompiler)
+
     if gConfig["n.global"].hasKey("filter"):
       gFilter = gConfig["n.global"]["filter"]
     if gConfig["n.global"].hasKey("quotes"):
@@ -713,30 +824,31 @@ proc runCfg(cfg: string) =
 
   if gConfig.hasKey("n.include"):
     for inc in gConfig["n.include"].keys():
-      gIncludes.add(inc)
+      gIncludes.add(inc.addEnv())
 
   if gConfig.hasKey("n.exclude"):
     for excl in gConfig["n.exclude"].keys():
-      gExcludes.add(excl)
+      gExcludes.add(excl.addEnv())
 
   if gConfig.hasKey("n.prepare"):
     for prep in gConfig["n.prepare"].keys():
       let (key, val) = getKey(prep)
       if val == true:
+        let prepVal = gConfig["n.prepare"][prep]
         if key == "download":
-          downloadUrl(gConfig["n.prepare"][prep])
+          downloadUrl(prepVal)
         elif key == "extract":
-          extractZip(gConfig["n.prepare"][prep])
+          extractZip(prepVal)
         elif key == "git":
-          gitRemotePull(gConfig["n.prepare"][prep])
+          gitRemotePull(prepVal)
         elif key == "gitremote":
-          gitRemotePull(gConfig["n.prepare"][prep], false)
+          gitRemotePull(prepVal, false)
         elif key == "gitsparse":
-          gitSparseCheckout(gConfig["n.prepare"][prep])
+          gitSparseCheckout(prepVal)
         elif key == "execute":
-          discard execProc(gConfig["n.prepare"][prep])
+          discard execProc(prepVal)
         elif key == "copy":
-          doCopy(gConfig["n.prepare"][prep])
+          doCopy(prepVal)
 
   if gConfig.hasKey("n.wildcard"):
     var wildcard = ""
@@ -746,13 +858,25 @@ proc runCfg(cfg: string) =
         if key == "wildcard":
           wildcard = gConfig["n.wildcard"][wild]
         else:
-          gWildcards.setSectionKey(wildcard, wild, gConfig["n.wildcard"][wild])
+          gWildcards.setSectionKey(wildcard, wild,
+                                   gConfig["n.wildcard"][wild])
 
   for file in gConfig.keys():
-    if file in @["n.global", "n.include", "n.exclude", "n.prepare", "n.wildcard"]:
+    if file in @["n.global", "n.include", "n.exclude",
+                 "n.prepare", "n.wildcard", "n.post"]:
       continue
 
     runFile(file, gConfig[file])
+
+  if gConfig.hasKey("n.post"):
+    for post in gConfig["n.post"].keys():
+      let (key, val) = getKey(post)
+      if val == true:
+        let postVal = gConfig["n.post"][post]
+        if key == "reset":
+          gitReset()
+        elif key == "execute":
+          discard execProc(postVal)
 
 # ###
 # Main loop

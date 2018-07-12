@@ -65,6 +65,17 @@ Nimgen only supports the ```gcc``` preprocessor at this time. Support for detect
 
 __Config file__
 
+In all sections below, environment variables are supported via Nim's string interpolation `%` symbol imported from the `strutils` module. Simply use double quotes to enclose any value and put `$` or `${}` around the environment variable name. In addition, the `output` var from the n.global section is available as ${output}. For example:
+
+    [n.global]
+    c_compiler="$CC"
+    cpp_compiler="${CPP}-arm"
+    output="src/path"
+
+    [n.include]
+    "${output}/library/include"
+    "${MY_INCLUDE_PATH}/include"
+
 _[n.global]_
 
 ```output``` = name of the Nimble project once installed, also location to place generated .nim files
@@ -72,6 +83,10 @@ _[n.global]_
 ```quotes``` = pick up any headers included using "" (and not <> which is typically used for standard headers) [default: true]
 
 ```filter``` = string to identify and recurse into library .h files in #include statements and exclude standard headers
+
+```cpp_compiler``` = string to specify a CPP compiler executable. [default: g++]
+
+```c_compiler``` = string to specify a C compiler executable. [default: gcc]
 
 _[n.include]_
 
@@ -102,6 +117,14 @@ The following keys can be used to prepare dependencies such as downloading ZIP f
 ```execute``` = command to run during preparation
 
 ```copy``` = copy a file to another location. Preferred over moving to preserve original. Comma separate for multiple entries. E.g. copy = "output/config.h.in=output/config.h"
+
+_[n.post]_
+
+This section is the same as the prepare section, but for performing actions after the project has been processed.
+
+```reset``` = whether or not to perform a git reset on all files after processing [default: false]
+
+```execute``` = command to run after processing
 
 _[n.wildcard]_
 
