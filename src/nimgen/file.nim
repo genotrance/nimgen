@@ -46,8 +46,33 @@ proc search*(file: string): string =
   # Only keep relative directory
   return result.multiReplace([("\\", $DirSep), ("//", $DirSep), (gProjectDir & $DirSep, "")])
 
+proc rename*(file: string, renfile: string) =
+  if file.splitFile().ext == ".nim":
+    return
+
+  var
+    nimout = getNimout(file, false)
+    newname = renfile.replace("$nimout", extractFilename(nimout))
+
+  if newname =~ peg"(!\$.)*{'$replace'\s*'('\s*{(!\)\S)+}')'}":
+    var final = nimout.extractFilename()
+    for entry in matches[1].split(","):
+      let spl = entry.split("=")
+      if spl.len() != 2:
+        echo "Bad replace syntax: " & renfile
+        quit(1)
+
+      let
+        srch = spl[0].strip()
+        repl = spl[1].strip()
+
+      final = final.replace(srch, repl)
+    newname = newname.replace(matches[0], final)
+
+  gRenames[file] = gOutput/newname
+
 # ###
-# Loading / unloading
+# Actions
 
 proc openRetry*(file: string, mode: FileMode = fmRead): File =
   while true:
@@ -74,27 +99,16 @@ template withFile*(file: string, body: untyped): untyped =
   else:
     echo "Missing file " & file
 
-proc rename*(file: string, renfile: string) =
-  if file.splitFile().ext == ".nim":
-    return
+proc doCopy*(flist: string) =
+  for pair in flist.split(","):
+    let spl = pair.split("=")
+    if spl.len() != 2:
+      echo "Bad copy syntax: " & flist
+      quit(1)
 
-  var
-    nimout = getNimout(file, false)
-    newname = renfile.replace("$nimout", extractFilename(nimout))
+    let
+      lfile = spl[0].strip()
+      rfile = spl[1].strip()
 
-  if newname =~ peg"(!\$.)*{'$replace'\s*'('\s*{(!\)\S)+}')'}":
-    var final = nimout.extractFilename()
-    for entry in matches[1].split(","):
-      let spl = entry.split("=")
-      if spl.len() != 2:
-        echo "Bad replace syntax: " & renfile
-        quit(1)
-
-      let
-        srch = spl[0].strip()
-        repl = spl[1].strip()
-
-      final = final.replace(srch, repl)
-    newname = newname.replace(matches[0], final)
-
-  gRenames[file] = gOutput/newname
+    copyFile(lfile, rfile)
+    echo "Copied $# to $#" % [lfile, rfile]

@@ -1,6 +1,6 @@
 import os
 
-import nimgen/config
+import nimgen/runcfg
 
 for i in commandLineParams():
   if i != "-f":

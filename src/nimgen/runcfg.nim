@@ -1,6 +1,6 @@
 import os, parsecfg, regex, strutils, tables
 
-import file, fileops, gencore, globals, prepare
+import c2nim, external, file, fileops, gencore, globals
 
 proc `[]`*(table: OrderedTableRef[string, string], key: string): string =
   ## Gets table values with env vars inserted
@@ -109,10 +109,14 @@ proc runFile*(file: string, cfgin: OrderedTableRef) =
       quit(1)
 
     if not noprocess:
-      var incls = c2nim(file, getNimout(sfile), c2nimConfig)
-      if c2nimConfig.recurse and incls.len() != 0:
+      let outfile = getNimout(sfile)
+      c2nim(file, outfile, c2nimConfig)
+
+      if c2nimConfig.recurse:
         var
           cfg = newOrderedTable[string, string]()
+          incls = getIncls(sfile)
+          incout = ""
 
         for name, value in c2nimConfig.fieldPairs:
           when value is string:
@@ -125,6 +129,10 @@ proc runFile*(file: string, cfgin: OrderedTableRef) =
 
         for inc in incls:
           runFile(inc, cfg)
+          incout &= "import $#\n" % inc.search().getNimout()[0 .. ^5]
+
+        if incout.len() != 0:
+          prepend(outfile, incout)
 
 proc runCfg*(cfg: string) =
   if not fileExists(cfg):

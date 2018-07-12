@@ -1,4 +1,4 @@
-import os, osproc, streams, strutils
+import os, osproc, regex, ropes, streams, strutils
 
 import globals
 
@@ -102,16 +102,61 @@ proc gitSparseCheckout*(plist: string) =
   echo "Checking out artifacts"
   discard execProc("git pull --depth=1 origin master")
 
-proc doCopy*(flist: string) =
-  for pair in flist.split(","):
-    let spl = pair.split("=")
-    if spl.len() != 2:
-      echo "Bad copy syntax: " & flist
-      quit(1)
+proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
+  var
+    pproc = if flags.contains("cpp"): gCppCompiler else: gCCompiler
+    cmd = "$# -E $# $#" % [pproc, ppflags, file]
 
-    let
-      lfile = spl[0].strip()
-      rfile = spl[1].strip()
+  for inc in gIncludes:
+    cmd &= " -I " & inc
 
-    copyFile(lfile, rfile)
-    echo "Copied $# to $#" % [lfile, rfile]
+  # Run preprocessor
+  var data = execProc(cmd)
+
+  # Include content only from file
+  var
+    rdata: Rope
+    start = false
+    sfile = file.replace("\\", "/")
+
+  if inline:
+    sfile = sfile.parentDir()
+  for line in data.splitLines():
+    if line.strip() != "":
+      if line[0] == '#' and not line.contains("#pragma"):
+        start = false
+        if sfile in line.replace("\\", "/").replace("//", "/"):
+          start = true
+        if not ("\\" in line) and not ("/" in line) and extractFilename(sfile) in line:
+          start = true
+      else:
+        if start:
+          rdata.add(
+            line.replace("_Noreturn", "")
+              .replace("(())", "")
+              .replace("WINAPI", "")
+              .replace("__attribute__", "")
+              .replace("extern \"C\"", "")
+              .replace(re"\(\([_a-z]+?\)\)", "")
+              .replace(re"\(\(__format__[\s]*\(__[gnu_]*printf__, [\d]+, [\d]+\)\)\);", ";") & "\n"
+          )
+  return $rdata
+
+proc runCtags*(file: string): string =
+  var
+    cmd = "ctags -o - --fields=+S+K --c-kinds=+p --file-scope=no " & file
+    fps = execProc(cmd)
+    fdata = ""
+
+  for line in fps.splitLines():
+    var spl = line.split(re"\t")
+    if spl.len() > 4:
+      if spl[0] != "main" and spl[3] != "member":
+        var fn = ""
+        var match: RegexMatch
+        if spl[2].find(re"/\^(.*?)\(", match):
+          fn = spl[2][match.group(0)[0]]
+          fn &= spl[4].replace("signature:", "") & ";"
+          fdata &= fn & "\n"
+
+  return fdata

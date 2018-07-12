@@ -1,6 +1,6 @@
 import os, regex, strutils
 
-import file, prepare
+import external, file
 
 # ###
 # Manipulating content
