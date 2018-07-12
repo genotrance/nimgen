@@ -36,6 +36,8 @@ To see examples of nimgen in action check out the following wrappers:-
         * download ZIP with headers and binary
     * [nimlibxlsxwriter](https://github.com/KeepCoolWithCoolidge/nimlibxlsxwriter) - libxlsxwriter wrapper
         * git checkout
+    * [nim-clblast](https://github.com/numforge/nim-clblast) - OpenCL BLAS wrapper
+        * static
 
 * Compile C code into binary
     * [nim7z](https://github.com/genotrance/nim7z) - 7z decoder wrapper: [docs](http://nimgen.genotrance.com/nim7z)
@@ -188,4 +190,10 @@ The following key only applies before processing and allows renaming the generat
 
 __Feedback__
 
-Nimgen is a work in progress and any feedback or suggestions are welcome. It is hosted on [GitHub](https://github.com/genotrance/nimgen) with an MIT license so issues, forks and PRs are most appreciated.
+Nimgen is a work in progress and any feedback or suggestions are welcome. It is hosted on [GitHub](https://github.com/genotrance/nimgen) with an MIT license so issues, forks and PRs are most appreciated. Also join us at https://gitter.im/nimgen/Lobby to chat about nimgen and the future of Nim wrappers.
+
+_Credits_
+
+Thank you to the following contributors for their hard work!
+
+https://github.com/jyapayne
