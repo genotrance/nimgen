@@ -160,6 +160,8 @@ The following keys apply to library source code and help with generating the .ni
 
 ```noprocess``` = do not process this source file with c2nim [default: false] - this is useful if a file only needs to be manipulated
 
+```reset``` = reset the file back to original state after all processing [default: false]
+
 Multiple entries for the all following keys are possible by appending any .string to the key. E.g. dynlib.win, compile.dir
 
 ```compile``` = file or dir of files of source code to {.compile.} into generated .nim

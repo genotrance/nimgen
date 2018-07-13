@@ -24,11 +24,12 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
     cfg = cfgin
     sfile = search(file)
 
-  if sfile.len() == 0 or sfile in gDoneRecursive:
+  if sfile in gDoneRecursive:
     return
 
-  echo "Processing " & sfile
-  gDoneRecursive.add(sfile)
+  if sfile.len() != 0:
+    echo "Processing " & sfile
+    gDoneRecursive.add(sfile)
 
   for pattern in gWildcards.keys():
     var m: RegexMatch
@@ -51,6 +52,7 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
     let (action, val) = getKey(act)
     if val == true:
       if action == "create":
+        echo "Creating " & file
         createDir(file.splitPath().head)
         writeFile(file, cfg[act])
       elif action in @["prepend", "append", "replace", "comment",
@@ -87,7 +89,9 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
         srch = act
 
   if file.splitFile().ext != ".nim":
-    var noprocess = false
+    var
+      noprocess = false
+      reset = false
 
     for act in cfg.keys():
       let (action, val) = getKey(act)
@@ -105,6 +109,8 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
             c2nimConfig.defines = true
           elif action == "noprocess":
             noprocess = true
+          elif action == "reset":
+            reset = true
         elif action == "flags":
           c2nimConfig.flags = cfg[act]
         elif action == "ppflags":
@@ -139,6 +145,9 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
 
         if incout.len() != 0:
           prepend(outfile, incout)
+
+    if reset:
+      gitCheckout(sfile)
 
 proc runCfg*(cfg: string) =
   if not fileExists(cfg):

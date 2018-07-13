@@ -60,15 +60,13 @@ proc gitReset*() =
 
   discard execProc("git reset --hard HEAD")
 
-proc gitCheckout*(filename: string) {.used.} =
-  echo "Resetting file: $#" % [filename]
+proc gitCheckout*(file: string) =
+  echo "  Resetting " & file
 
   setCurrentDir(gOutput)
   defer: setCurrentDir(gProjectDir)
 
-  let adjustedFile = filename.replace(gOutput & $DirSep, "")
-
-  discard execProc("git checkout $#" % [adjustedFile])
+  discard execProc("git checkout $#" % file.replace(gOutput & "/", ""))
 
 proc gitRemotePull*(url: string, pull=true) =
   if dirExists(gOutput/".git"):
