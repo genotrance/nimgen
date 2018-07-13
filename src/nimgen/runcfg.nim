@@ -55,6 +55,10 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
         echo "Creating " & file
         createDir(file.splitPath().head)
         writeFile(file, cfg[act])
+        if file in gExcludes:
+          gExcludes.delete(gExcludes.find(file))
+        sfile = search(file)
+        gDoneRecursive.add(sfile)
       elif action in @["prepend", "append", "replace", "comment",
                        "rename", "compile", "dynlib", "pragma",
                        "pipe"] and sfile != "":
