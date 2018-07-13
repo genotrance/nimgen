@@ -8,7 +8,7 @@ import globals
 proc getNimout*(file: string, rename=true): string =
   result = file.splitFile().name.replace(re"[\-\.]", "_") & ".nim"
   if gOutput != "":
-    result = gOutput/result
+    result = gOutput & "/" & result
 
   if not rename:
     return
@@ -35,7 +35,7 @@ proc search*(file: string): string =
   elif not fileExists(result) and not dirExists(result):
     var found = false
     for inc in gIncludes:
-      result = inc/file
+      result = inc & "/" & file
       if fileExists(result) or dirExists(result):
         found = true
         break
@@ -69,7 +69,7 @@ proc rename*(file: string, renfile: string) =
       final = final.replace(srch, repl)
     newname = newname.replace(matches[0], final)
 
-  gRenames[file] = gOutput/newname
+  gRenames[file] = gOutput & "/" & newname
 
 # ###
 # Actions

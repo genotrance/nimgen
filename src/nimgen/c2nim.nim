@@ -7,14 +7,10 @@ template relativePath(path: untyped): untyped =
 
 proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   var file = search(fl)
-  if file == "":
+  if file.len() == 0:
     return
 
-  if file in gDoneRecursive:
-    return
-
-  echo "Processing $# => $#" % [file, outfile]
-  gDoneRecursive.add(file)
+  echo "  Generating " & outfile
 
   # Remove static inline function bodies
   removeStatic(file)

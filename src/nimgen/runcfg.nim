@@ -24,11 +24,17 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
     cfg = cfgin
     sfile = search(file)
 
+  if sfile.len() == 0 or sfile in gDoneRecursive:
+    return
+
+  echo "Processing " & sfile
+  gDoneRecursive.add(sfile)
+
   for pattern in gWildcards.keys():
     var m: RegexMatch
     let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
     if file.find(toPattern(pat), m):
-      echo "Appending " & file & " " & pattern
+      echo "  Appending keys for wildcard " & pattern
       for key in gWildcards[pattern].keys():
         cfg[key & "." & pattern] = gWildcards[pattern][key]
 
