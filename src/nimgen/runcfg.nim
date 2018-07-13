@@ -19,15 +19,15 @@ proc getKey(ukey: string): tuple[key: string, val: bool] =
 
   return (kv[0], false)
 
-proc runFile*(file: string, cfgin: OrderedTableRef) =
+proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, string]()) =
   var
     cfg = cfgin
     sfile = search(file)
 
   for pattern in gWildcards.keys():
-    var match: RegexMatch
+    var m: RegexMatch
     let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
-    if file.find(toPattern(pat), match):
+    if file.find(toPattern(pat), m):
       echo "Appending " & file & " " & pattern
       for key in gWildcards[pattern].keys():
         cfg[key & "." & pattern] = gWildcards[pattern][key]
@@ -224,7 +224,12 @@ proc runCfg*(cfg: string) =
                  "n.prepare", "n.wildcard", "n.post"]:
       continue
 
-    runFile(file, gConfig[file])
+    if file == "n.sourcefile":
+      for pattern in gConfig["n.sourcefile"].keys():
+        for file in walkFiles(pattern.addEnv):
+          runFile(file)
+    else:
+      runFile(file, gConfig[file])
 
   if gConfig.hasKey("n.post"):
     for post in gConfig["n.post"].keys():

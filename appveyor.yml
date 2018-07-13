@@ -61,6 +61,8 @@ for:
   on_finish:
     - 7z a -r buildlogs-win.zip %USERPROFILE%\.nimble\pkgs
     - appveyor PushArtifact buildlogs-win.zip
+    - 7z a -r nimgen-docs.zip %BASE_DIR%\nimgen\web
+    - appveyor PushArtifact nimgen-docs.zip
 
   cache:
     - c:\projects\i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z

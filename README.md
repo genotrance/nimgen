@@ -46,6 +46,8 @@ To see examples of nimgen in action check out the following wrappers:-
         * git sparse checkout
     * [nimbigwig](https://github.com/genotrance/nimbigwig) - libbigWig wrapper: [docs](http://nimgen.genotrance.com/nimbigwig)
         * git checkout
+    * [nimclipboard](https://github.com/genotrance/nimclipboard) - libclipboard wrapper: [docs](http://nimgen.genotrance.com/nimclipboard)
+        * git checkout
     * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper: [docs](http://nimgen.genotrance.com/nimfuzz)
         * download header file
     * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper: [docs](http://nimgen.genotrance.com/nimkerberos)
@@ -133,6 +135,10 @@ _[n.wildcard]_
 File wildcards such as *.nim, ssl*.h, etc. can be used to perform tasks across a group of files. This is useful to define common operations such as global text replacements without having to specify an explicit section for every single file. These operations will be performed on every matching file that is defined as a _sourcefile_ or recursed files. Only applies on source files following the wildcard declarations.
 
 ```wildcard``` = pattern to match against. All keys following the wildcard declaration will apply to matched files
+
+_[n.sourcefile]_
+
+This section allows selection of multiple sourcefiles without requiring a detailed section for each file. Each specific file can be listed one line at a time and file wildcards can be used to include multiple source files. E.g. `$output/include/*/h`. `[n.wildcard]` definitions can be used to perform common operations on these source files if required.
 
 _[sourcefile]_
 
