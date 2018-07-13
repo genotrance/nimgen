@@ -76,14 +76,14 @@ proc removeStatic*(filename: string) =
   ## out body
   withFile(filename):
     content = content.replace(
-      re"(?m)(static inline.*?\))(\s*\{(\s*?.*?$)*[\n\r]\})",
+      re"(?m)(static inline.*?\))(\s*\{(\s*?.*?$)*?[\n\r]\})",
       proc (m: RegexMatch, s: string): string =
         let funcDecl = s[m.group(0)[0]]
         let body = s[m.group(1)[0]].strip()
         result = ""
 
         result.add("$#;" % [funcDecl])
-        result.add(body.replace(re"(?m)^", "//"))
+        result.add(body.replace(re"(?m)^(.*\n?)", "//$1"))
     )
 
 proc reAddStatic*(filename: string) =
@@ -91,14 +91,14 @@ proc reAddStatic*(filename: string) =
   ## removeStatic
   withFile(filename):
     content = content.replace(
-      re"(?m)(static inline.*?\));(\/\/\s*\{(\s*?.*?$)*[\n\r]\/\/\})",
+      re"(?m)(static inline.*?\));(\/\/\s*\{(\s*?.*?$)*?[\n\r]\/\/\})",
       proc (m: RegexMatch, s: string): string =
         let funcDecl = s[m.group(0)[0]]
         let body = s[m.group(1)[0]].strip()
         result = ""
 
         result.add("$# " % [funcDecl])
-        result.add(body.replace(re"(?m)^\/\/", ""))
+        result.add(body.replace(re"(?m)^\/\/(.*\n?)", "$1"))
     )
 
 proc fixFuncProtos*(file: string) =
