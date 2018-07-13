@@ -147,7 +147,7 @@ proc runCtags*(file: string): string =
     fdata = ""
 
   for line in fps.splitLines():
-    var spl = line.split(re"\t")
+    var spl = line.split('\t')
     if spl.len() > 4:
       if spl[0] != "main" and spl[3] != "member":
         var fn = ""
