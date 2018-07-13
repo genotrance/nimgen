@@ -6,7 +6,7 @@ import globals
 # File loction
 
 proc getNimout*(file: string, rename=true): string =
-  result = file.splitFile().name.replace(re"[\-\.]", "_") & ".nim"
+  result = file.splitFile().name.multiReplace([("-", "_"), (".", "_")]) & ".nim"
   if gOutput != "":
     result = gOutput & "/" & result
 
