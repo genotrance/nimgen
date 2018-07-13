@@ -1,4 +1,4 @@
-import os, ospaths, pegs, regex, strutils, tables
+import os, ospaths, regex, strutils, tables
 
 import globals
 
@@ -54,20 +54,24 @@ proc rename*(file: string, renfile: string) =
     nimout = getNimout(file, false)
     newname = renfile.replace("$nimout", extractFilename(nimout))
 
-  if newname =~ peg"(!\$.)*{'$replace'\s*'('\s*{(!\)\S)+}')'}":
-    var final = nimout.extractFilename()
-    for entry in matches[1].split(","):
-      let spl = entry.split("=")
-      if spl.len() != 2:
-        echo "Bad replace syntax: " & renfile
-        quit(1)
+  if newname.find("replace(") > 0:
+    let matches = findAndCaptureAll(newname, re"\w+=\w+")
 
-      let
-        srch = spl[0].strip()
-        repl = spl[1].strip()
+    if matches.len > 0:
+      var final = nimout.extractFilename()
+      for entry in matches:
+        let spl = entry.split("=")
 
-      final = final.replace(srch, repl)
-    newname = newname.replace(matches[0], final)
+        if spl.len() != 2:
+          echo "Bad replace syntax: " & renfile
+          quit(1)
+
+        let
+          srch = spl[0].strip()
+          repl = spl[1].strip()
+
+        final = final.replace(srch, repl)
+      newname = final
 
   gRenames[file] = gOutput & "/" & newname
 
