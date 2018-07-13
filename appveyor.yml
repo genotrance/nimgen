@@ -65,10 +65,10 @@ for:
     - appveyor PushArtifact nimgen-docs.zip
 
   cache:
-    - %BASE_DIR%\i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
-    - %BASE_DIR%\mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
-    - %BASE_DIR%\mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
-    - %BASE_DIR%\nim-0.18.0_x32.zip
+    - c:\projects\i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
+    - c:\projects\mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
+    - c:\projects\mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
+    - c:\projects\nim-0.18.0_x32.zip
 
 -
   matrix:
@@ -100,7 +100,7 @@ for:
     - appveyor PushArtifact buildlogs-lin.zip
 
   cache:
-  - $BASE_DIR/nim-0.18.0.tar.xz
+  - /home/appveyor/projects/nim-0.18.0.tar.xz
 
 build_script:
   - nimble install -y
