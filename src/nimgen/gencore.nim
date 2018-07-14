@@ -20,7 +20,7 @@ proc addEnv*(str: string): string =
     discard
 
   # if there are still format args, print a warning
-  if newStr.contains("${"):
+  if newStr.contains("$") and not newStr.contains("$replace("):
     echo "WARNING: \"", newStr, "\" still contains an uninterpolated value!"
 
   return newStr

@@ -38,7 +38,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
 
   for inc in gIncludes:
     if inc.isAbsolute():
-      passC &= ("""{.passC: "-I\"$#\"".}""" % [inc]) & "\n"
+      passC &= ("""{.passC: "-I\"$#\"".}""" % [inc.sanitizePath()]) & "\n"
     else:
       passC &= (
         """{.passC: "-I\"" & currentSourcePath().splitPath().head & "$#\"".}""" %
@@ -85,11 +85,10 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
       passC &= "const header$# = currentSourcePath().splitPath().head & \"$#\"\n" %
         [fname, file.relativePath()]
     extflags = "--header:header$#" % fname
-
   # Run c2nim on generated file
   var cmd = "c2nim $# $# --out:$# $#" % [c2nimConfig.flags, extflags, outfile, cfile]
   when defined(windows):
-    cmd = "cmd /c " & cmd
+    cmd = "cmd /c " & cmd.quoteShell
   discard execProc(cmd)
 
   if c2nimConfig.preprocess or c2nimConfig.ctags:

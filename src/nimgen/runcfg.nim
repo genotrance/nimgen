@@ -196,6 +196,9 @@ proc runCfg*(cfg: string) =
       # Reset on a per project basis
       gCCompiler = getEnv(cCompilerEnv, defaultCCompiler)
 
+    gCppCompiler = gCppCompiler.quoteShell
+    gCCompiler = gCCompiler.quoteShell
+
     if gConfig["n.global"].hasKey("filter"):
       gFilter = gConfig["n.global"]["filter"]
     if gConfig["n.global"].hasKey("quotes"):
