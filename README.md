@@ -106,7 +106,7 @@ List of all directories or files to exclude from all parsing. If an entry here m
 
 _[n.prepare]_
 
-The following keys can be used to prepare dependencies such as downloading ZIP files, cloning Git repositories, etc. Multiple entries are possible by appending any .string to the key. E.g. download.file1. -win, -lin and -osx can be used for OS specific tasks. E.g. download-win
+The following keys can be used to prepare dependencies such as downloading ZIP files, cloning Git repositories, etc. Multiple entries are possible by appending any .string to the key. E.g. download.file1. -win, -lin and -mac/osx can be used for OS specific tasks. E.g. download-win, execute-lin,mac.unique1
 
 ```download``` = url to download to the output directory. ZIP files are automatically extracted. Files are not redownloaded if already present but re-extracted
 

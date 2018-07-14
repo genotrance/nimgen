@@ -11,11 +11,14 @@ proc getKey(ukey: string): tuple[key: string, val: bool] =
   if kv.len() == 1:
     kv.add("")
 
-  if (kv[1] == "") or
-    (kv[1] == "win" and defined(Windows)) or
-    (kv[1] == "lin" and defined(Linux)) or
-    (kv[1] == "osx" and defined(MacOSX)):
+  if kv[1] == "":
     return (kv[0], true)
+
+  for ostyp in kv[1].split(","):
+    if (ostyp == "win" and defined(Windows)) or
+       (ostyp == "lin" and defined(Linux)) or
+       ((ostyp == "osx" or ostyp == "mac") and defined(MacOSX)):
+      return (kv[0], true)
 
   return (kv[0], false)
 
