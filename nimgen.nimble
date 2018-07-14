@@ -14,4 +14,5 @@ skipDirs = @["nimgen", "tests"]
 requires "nim >= 0.17.0", "c2nim >= 0.9.13", "regex >= 0.7.1"
 
 task test, "Test nimgen":
+    exec "nim c -r tests/rununittests.nim"
     exec "nim e tests/nimgentest.nims"
