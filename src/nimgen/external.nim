@@ -126,7 +126,7 @@ proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
     if line.strip() != "":
       if line[0] == '#' and not line.contains("#pragma"):
         start = false
-        if sfile in line.multiReplace([("\\", "/"), ("//", "/")]):
+        if sfile in line.sanitizePath:
           start = true
         if not ("\\" in line) and not ("/" in line) and extractFilename(sfile) in line:
           start = true
