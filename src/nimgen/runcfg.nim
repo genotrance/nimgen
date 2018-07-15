@@ -25,7 +25,7 @@ proc getKey(ukey: string): tuple[key: string, val: bool] =
 proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, string]()) =
   var
     cfg = cfgin
-    sfile = search(file)
+    sfile = search(file).sanitizePath
 
   if sfile in gDoneRecursive:
     return
@@ -195,6 +195,9 @@ proc runCfg*(cfg: string) =
     else:
       # Reset on a per project basis
       gCCompiler = getEnv(cCompilerEnv, defaultCCompiler)
+
+    gCppCompiler = gCppCompiler.quoteShell
+    gCCompiler = gCCompiler.quoteShell
 
     if gConfig["n.global"].hasKey("filter"):
       gFilter = gConfig["n.global"]["filter"]
