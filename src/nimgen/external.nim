@@ -2,6 +2,9 @@ import os, osproc, regex, ropes, streams, strutils
 
 import globals
 
+proc sanitizePath*(path: string): string =
+  path.multiReplace([("\\", "/"), ("//", "/")])
+
 proc execProc*(cmd: string): string =
   result = ""
   var
@@ -106,7 +109,7 @@ proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
     cmd = "$# -E $# $#" % [pproc, ppflags, file]
 
   for inc in gIncludes:
-    cmd &= " -I " & inc
+    cmd &= " -I " & inc.quoteShell
 
   # Run preprocessor
   var data = execProc(cmd)
