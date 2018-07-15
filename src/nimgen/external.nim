@@ -123,18 +123,15 @@ proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
     if line.strip() != "":
       if line[0] == '#' and not line.contains("#pragma"):
         start = false
-        if sfile in line.replace("\\", "/").replace("//", "/"):
+        if sfile in line.multiReplace([("\\", "/"), ("//", "/")]):
           start = true
         if not ("\\" in line) and not ("/" in line) and extractFilename(sfile) in line:
           start = true
       else:
         if start:
           rdata.add(
-            line.replace("_Noreturn", "")
-              .replace("(())", "")
-              .replace("WINAPI", "")
-              .replace("__attribute__", "")
-              .replace("extern \"C\"", "")
+            line.multiReplace([("_Noreturn", ""), ("(())", ""), ("WINAPI", ""),
+                               ("__attribute__", ""), ("extern \"C\"", "")])
               .replace(re"\(\([_a-z]+?\)\)", "")
               .replace(re"\(\(__format__[\s]*\(__[gnu_]*printf__, [\d]+, [\d]+\)\)\);", ";") & "\n"
           )
