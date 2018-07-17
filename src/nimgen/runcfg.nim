@@ -25,7 +25,7 @@ proc getKey(ukey: string): tuple[key: string, val: bool] =
 proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, string]()) =
   var
     cfg = cfgin
-    sfile = search(file).sanitizePath
+    sfile = search(file)
 
   if sfile in gDoneRecursive:
     return

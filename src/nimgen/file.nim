@@ -1,6 +1,6 @@
 import os, ospaths, pegs, regex, strutils, tables
 
-import globals
+import globals, external
 
 # ###
 # File loction
@@ -44,7 +44,7 @@ proc search*(file: string): string =
       quit(1)
 
   # Only keep relative directory
-  return result.multiReplace([("\\", $DirSep), ("//", $DirSep), (gProjectDir & $DirSep, "")])
+  return result.sanitizePath.replace(gProjectDir & "/", "")
 
 proc rename*(file: string, renfile: string) =
   if file.splitFile().ext == ".nim":
