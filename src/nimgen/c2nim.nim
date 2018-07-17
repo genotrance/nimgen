@@ -6,7 +6,7 @@ template relativePath(path: untyped): untyped =
   path.multiReplace([(gOutput, ""), ("\\", "/"), ("//", "/")])
 
 proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
-  var file = search(fl)
+  var file = search(fl).sanitizePath
   if file.len() == 0:
     return
 
