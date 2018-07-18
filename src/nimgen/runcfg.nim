@@ -25,7 +25,7 @@ proc getKey(ukey: string): tuple[key: string, val: bool] =
 proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, string]()) =
   var
     cfg = cfgin
-    sfile = search(file).sanitizePath
+    sfile = search(file)
 
   if sfile in gDoneRecursive:
     return
@@ -161,13 +161,13 @@ proc runCfg*(cfg: string) =
     echo "Config doesn't exist: " & cfg
     quit(1)
 
-  gProjectDir = parentDir(cfg.expandFilename())
+  gProjectDir = parentDir(cfg.expandFilename()).sanitizePath
 
   gConfig = loadConfig(cfg)
 
   if gConfig.hasKey("n.global"):
     if gConfig["n.global"].hasKey("output"):
-      gOutput = gConfig["n.global"]["output"]
+      gOutput = gConfig["n.global"]["output"].sanitizePath
       if dirExists(gOutput):
         if "-f" in commandLineParams():
           try:
@@ -207,11 +207,11 @@ proc runCfg*(cfg: string) =
 
   if gConfig.hasKey("n.include"):
     for inc in gConfig["n.include"].keys():
-      gIncludes.add(inc.addEnv())
+      gIncludes.add(inc.addEnv().sanitizePath)
 
   if gConfig.hasKey("n.exclude"):
     for excl in gConfig["n.exclude"].keys():
-      gExcludes.add(excl.addEnv())
+      gExcludes.add(excl.addEnv().sanitizePath)
 
   if gConfig.hasKey("n.prepare"):
     for prep in gConfig["n.prepare"].keys():

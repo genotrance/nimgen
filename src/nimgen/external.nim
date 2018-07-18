@@ -118,7 +118,7 @@ proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
   var
     rdata: Rope
     start = false
-    sfile = file.replace("\\", "/")
+    sfile = file.sanitizePath
 
   if inline:
     sfile = sfile.parentDir()
