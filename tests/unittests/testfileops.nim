@@ -120,7 +120,7 @@ suite "test file ops":
 
   test "pipe command into file":
     when defined(windows):
-      pipe(testfilename, "ECHO foo > $file")
+      pipe(testfilename, "ECHO foo")
       testfilename.checkFile("foo")
     else:
       pipe(testfilename, "cat $file | grep 'this is text'")
