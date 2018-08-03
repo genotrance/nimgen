@@ -57,7 +57,7 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
       if action == "create":
         echo "Creating " & file
         createDir(file.splitPath().head)
-        writeFile(file, cfg[act])
+        writeFileFlush(file, cfg[act])
         if file in gExcludes:
           gExcludes.delete(gExcludes.find(file))
         sfile = search(file)

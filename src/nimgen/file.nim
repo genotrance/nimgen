@@ -82,6 +82,12 @@ proc openRetry*(file: string, mode: FileMode = fmRead): File =
     except IOError:
       sleep(100)
 
+template writeFileFlush*(file, content: string): untyped =
+  let f = openRetry(file, fmWrite)
+  f.write(content)
+  f.flushFile()
+  f.close()
+
 template withFile*(file: string, body: untyped): untyped =
   if fileExists(file):
     var f = openRetry(file)
@@ -93,9 +99,7 @@ template withFile*(file: string, body: untyped): untyped =
     body
 
     if content != contentOrig:
-      f = openRetry(file, fmWrite)
-      write(f, content)
-      f.close()
+      writeFileFlush(file, content)
   else:
     echo "Missing file " & file
 

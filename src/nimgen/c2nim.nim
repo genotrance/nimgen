@@ -20,10 +20,10 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   var cfile = file
   if c2nimConfig.preprocess:
     cfile = "temp-$#.c" % [outfile.extractFilename()]
-    writeFile(cfile, runPreprocess(file, c2nimConfig.ppflags, c2nimConfig.flags, c2nimConfig.inline))
+    writeFileFlush(cfile, runPreprocess(file, c2nimConfig.ppflags, c2nimConfig.flags, c2nimConfig.inline))
   elif c2nimConfig.ctags:
     cfile = "temp-$#.c" % [outfile.extractFilename()]
-    writeFile(cfile, runCtags(file))
+    writeFileFlush(cfile, runCtags(file))
 
   if c2nimConfig.defines and (c2nimConfig.preprocess or c2nimConfig.ctags):
     prepend(cfile, getDefines(file, c2nimConfig.inline))

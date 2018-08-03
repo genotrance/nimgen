@@ -6,22 +6,11 @@ proc sanitizePath*(path: string): string =
   path.multiReplace([("\\", "/"), ("//", "/")])
 
 proc execProc*(cmd: string): string =
-  result = ""
-  var
-    p = startProcess(cmd, options = {poStdErrToStdOut, poUsePath, poEvalCommand})
+  var ret: int
 
-    outp = outputStream(p)
-    line = newStringOfCap(120).TaintedString
-
-  while true:
-    if outp.readLine(line):
-      result.add(line)
-      result.add("\n")
-    elif not running(p): break
-
-  var x = p.peekExitCode()
-  if x != 0:
-    echo "Command failed: " & $x
+  (result, ret) = execCmdEx(cmd)
+  if ret != 0:
+    echo "Command failed: " & $ret
     echo cmd
     echo result
     quit(1)
@@ -64,12 +53,15 @@ proc gitReset*() =
   discard execProc("git reset --hard HEAD")
 
 proc gitCheckout*(file: string) =
-  echo "  Resetting " & file
+  echo "Resetting " & file
 
   setCurrentDir(gOutput)
   defer: setCurrentDir(gProjectDir)
 
-  discard execProc("git checkout $#" % file.replace(gOutput & "/", ""))
+  let cmd = "git checkout $#" % file.replace(gOutput & "/", "")
+  if execCmdEx(cmd)[0].contains("Permission denied"):
+    sleep(500)
+    discard execProc(cmd)
 
 proc gitRemotePull*(url: string, pull=true) =
   if dirExists(gOutput/".git"):
