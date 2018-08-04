@@ -87,7 +87,6 @@ proc getDefines*(file: string, inline=false): string =
     for incl in incls:
       let sincl = search(incl)
       if sincl != "":
-        echo "Inlining " & sincl
         result &= getDefines(sincl)
   withFile(file):
     for def in content.findAll(re"(?m)^(\s*#\s*define\s+[\w\d_]+\s+[\d\-.xf]+)(?:\r|//|/*).*?$"):

@@ -60,7 +60,7 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
         writeFileFlush(file, cfg[act])
         if file in gExcludes:
           gExcludes.delete(gExcludes.find(file))
-        sfile = search(file)
+        sfile = file
         gDoneRecursive.add(sfile)
       elif action in @["prepend", "append", "replace", "comment",
                        "rename", "compile", "dynlib", "pragma",
@@ -127,31 +127,38 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
       echo "Cannot use recurse and inline simultaneously"
       quit(1)
 
-    if not noprocess:
-      let outfile = getNimout(sfile)
-      c2nim(file, outfile, c2nimConfig)
+    removeStatic(sfile)
+    fixFuncProtos(sfile)
 
-      if c2nimConfig.recurse:
-        var
-          cfg = newOrderedTable[string, string]()
-          incls = getIncls(sfile)
-          incout = ""
+    let outfile = getNimout(sfile)
+    if c2nimConfig.recurse or c2nimConfig.inline:
+      var
+        cfg = newOrderedTable[string, string]()
+        incls = getIncls(sfile)
+        incout = ""
 
-        for name, value in c2nimConfig.fieldPairs:
-          when value is string:
-            cfg[name] = value
-          when value is bool:
-            cfg[name] = $value
+      for name, value in c2nimConfig.fieldPairs:
+        when value is string:
+          cfg[name] = value
+        when value is bool:
+          cfg[name] = $value
 
-        for i in c2nimConfig.dynlib:
-          cfg["dynlib." & i] = i
+      for i in c2nimConfig.dynlib:
+        cfg["dynlib." & i] = i
 
-        for inc in incls:
-          runFile(inc, cfg)
+      if c2nimConfig.inline:
+        cfg["noprocess"] = "true"
+
+      for inc in incls:
+        runFile(inc, cfg)
+        if c2nimConfig.recurse:
           incout &= "import $#\n" % inc.search().getNimout()[0 .. ^5]
 
-        if incout.len() != 0:
-          prepend(outfile, incout)
+      if c2nimConfig.recurse and incout.len() != 0:
+        prepend(outfile, incout)
+
+    if not noprocess:
+      c2nim(file, outfile, c2nimConfig)
 
     if reset:
       gitCheckout(sfile)

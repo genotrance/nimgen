@@ -10,12 +10,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   if file.len() == 0:
     return
 
-  echo "  Generating " & outfile
-
-  # Remove static inline function bodies
-  removeStatic(file)
-
-  fixFuncProtos(file)
+  echo "Generating " & outfile
 
   var cfile = file
   if c2nimConfig.preprocess:
@@ -122,6 +117,3 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   # Add dynamic library
   if outlib != "":
     prepend(outfile, outlib)
-
-  # Add back static functions for compilation
-  reAddStatic(file)

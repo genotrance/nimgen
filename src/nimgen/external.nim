@@ -50,7 +50,10 @@ proc gitReset*() =
   setCurrentDir(gOutput)
   defer: setCurrentDir(gProjectDir)
 
-  discard execProc("git reset --hard HEAD")
+  let cmd = "git reset --hard HEAD"
+  while execCmdEx(cmd)[0].contains("Permission denied"):
+    sleep(1000)
+    echo "  Retrying ..."
 
 proc gitCheckout*(file: string) =
   echo "Resetting " & file
@@ -59,9 +62,9 @@ proc gitCheckout*(file: string) =
   defer: setCurrentDir(gProjectDir)
 
   let cmd = "git checkout $#" % file.replace(gOutput & "/", "")
-  if execCmdEx(cmd)[0].contains("Permission denied"):
+  while execCmdEx(cmd)[0].contains("Permission denied"):
     sleep(500)
-    discard execProc(cmd)
+    echo "  Retrying ..."
 
 proc gitRemotePull*(url: string, pull=true) =
   if dirExists(gOutput/".git"):
