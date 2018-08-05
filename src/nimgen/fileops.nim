@@ -38,13 +38,7 @@ proc freplace*(file: string, pattern: string, repl="") =
 
 proc freplace*(file: string, pattern: Regex, repl="") =
   withFile(file):
-    var m: RegexMatch
-    if content.find(pattern, m):
-      if "$#" in repl:
-        content = content.replace(pattern,
-          proc (m: RegexMatch, s: string): string = repl % s[m.group(0)[0]])
-      else:
-        content = content.replace(pattern, repl)
+    content = content.replace(pattern, repl)
 
 proc comment*(file: string, pattern: string, numlines: string) =
   let

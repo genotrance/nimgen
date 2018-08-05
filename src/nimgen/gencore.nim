@@ -4,24 +4,16 @@ import file, globals
 
 proc addEnv*(str: string): string =
   var newStr = str
-  for pair in envPairs():
-    try:
-      newStr = newStr % [pair.key, pair.value.string]
-    except ValueError:
-      # Ignore if there are no values to replace. We
-      # want to continue anyway
-      discard
 
-  try:
+  if "$output" in newStr or "${output}" in newStr:
     newStr = newStr % ["output", gOutput]
-  except ValueError:
-    # Ignore if there are no values to replace. We
-    # want to continue anyway
-    discard
 
-  # if there are still format args, print a warning
-  if newStr.contains("$") and not newStr.contains("$replace("):
-    echo "WARNING: \"", newStr, "\" still contains an uninterpolated value!"
+  for pair in envPairs():
+    if pair.key.len() == 0:
+      continue
+
+    if ("$" & pair.key) in newStr or ("${" & pair.key & "}") in newStr:
+      newStr = newStr % [pair.key, pair.value.string]
 
   return newStr
 

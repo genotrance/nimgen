@@ -95,7 +95,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
       discard
 
   # Nim doesn't like {.cdecl.} for type proc()
-  freplace(outfile, re"(?m)(.*? = proc.*?)\{.cdecl.\}", "$#")
+  freplace(outfile, re"(?m)(.*? = proc.*?)\{.cdecl.\}", "$1")
   freplace(outfile, " {.cdecl.})", ")")
 
   # Include {.compile.} directives

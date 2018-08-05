@@ -174,15 +174,17 @@ The following keys apply to library source code (before processing) and generate
 
 ```create``` = create a file at exact location with contents specified. File needs to be in the _[n.exclude]_ list in order to be created.
 
+```pipe``` = execute a command on a file and store the output of the command as the new file contents. E.g. pipe = "cat $file | grep 'static inline'"
+
 ```search``` = search string providing context for following prepend/append/replace directives
 
-```pipe``` = execute a command on a file and store the output of the command as the new file contents. Ex: pipe = "cat $file | grep 'static inline'"
+```regex``` = regex search string providing context for the following replace directive. Specify using """ to avoid regex parsing issues
 
 ```prepend``` = string value to prepend into file at beginning or before search
 
 ```append``` = string value to append into file at the end or after search
 
-```replace``` = string value to replace search string in file
+```replace``` = string value to replace search string in file. Regex captures can be referred to using $1, $2, etc.
 
 ```comment``` = number of lines to comment from search location
 

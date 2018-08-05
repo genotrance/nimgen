@@ -44,6 +44,7 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
 
   var
     srch = ""
+    rgx = ""
 
     c2nimConfig = c2nimConfigObj(
       flags: "--stdcall", ppflags: "",
@@ -78,6 +79,8 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
         elif action == "replace":
           if srch != "":
             freplace(sfile, cfg[srch], cfg[act])
+          elif rgx != "":
+            freplace(sfile, toPattern(cfg[rgx]), cfg[act])
         elif action == "comment":
           if srch != "":
             comment(sfile, cfg[srch], cfg[act])
@@ -92,8 +95,11 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
         elif action == "pipe":
           pipe(sfile, cfg[act])
         srch = ""
+        rgx = ""
       elif action == "search":
         srch = act
+      elif action == "regex":
+        rgx = act
 
   if file.splitFile().ext != ".nim":
     var
@@ -131,11 +137,11 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
     fixFuncProtos(sfile)
 
     let outfile = getNimout(sfile)
+    var incout = ""
     if c2nimConfig.recurse or c2nimConfig.inline:
       var
         cfg = newOrderedTable[string, string]()
         incls = getIncls(sfile)
-        incout = ""
 
       for name, value in c2nimConfig.fieldPairs:
         when value is string:
@@ -154,11 +160,11 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
         if c2nimConfig.recurse:
           incout &= "import $#\n" % inc.search().getNimout()[0 .. ^5]
 
-      if c2nimConfig.recurse and incout.len() != 0:
-        prepend(outfile, incout)
-
     if not noprocess:
       c2nim(file, outfile, c2nimConfig)
+
+      if c2nimConfig.recurse and incout.len() != 0:
+        prepend(outfile, incout)
 
     if reset:
       gitCheckout(sfile)
