@@ -169,6 +169,24 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
     if reset:
       gitCheckout(sfile)
 
+proc setOutputDir(dir: string) =
+  gOutput = dir.sanitizePath
+  if dirExists(gOutput):
+    if "-f" in commandLineParams():
+      try:
+        removeDir(gOutput)
+      except OSError:
+        echo "Directory in use: " & gOutput
+        quit(1)
+    else:
+      for f in walkFiles(gOutput/"*.nim"):
+        try:
+          removeFile(f)
+        except OSError:
+          echo "Unable to delete: " & f
+          quit(1)
+  createDir(gOutput)
+
 proc runCfg*(cfg: string) =
   if not fileExists(cfg):
     echo "Config doesn't exist: " & cfg
@@ -180,22 +198,7 @@ proc runCfg*(cfg: string) =
 
   if gConfig.hasKey("n.global"):
     if gConfig["n.global"].hasKey("output"):
-      gOutput = gConfig["n.global"]["output"].sanitizePath
-      if dirExists(gOutput):
-        if "-f" in commandLineParams():
-          try:
-            removeDir(gOutput)
-          except OSError:
-            echo "Directory in use: " & gOutput
-            quit(1)
-        else:
-          for f in walkFiles(gOutput/"*.nim"):
-            try:
-              removeFile(f)
-            except OSError:
-              echo "Unable to delete: " & f
-              quit(1)
-      createDir(gOutput)
+      setOutputDir(gConfig["n.global"]["output"])
 
     if gConfig["n.global"].hasKey("cpp_compiler"):
       gCppCompiler = gConfig["n.global"]["cpp_compiler"]
@@ -278,3 +281,106 @@ proc runCfg*(cfg: string) =
           gitReset()
         elif key == "execute":
           discard execProc(postVal)
+
+let gHelp = """
+Nimgen is a helper for c2nim to simplify and automate the wrapping of C libraries
+
+Usage:
+  nimgen [options] file.cfg|file.h ...
+
+Params:
+  -C<compile>  add compile entry       *
+  -E<exclude>  add n.exclude entry     *
+  -F<flags>    set c2nim flags         *
+  -I<include>  add n.include dir       *
+  -O<outdir>   set output directory
+  -P<ppflags>  set preprocessor flags  *
+
+Options:
+  -c           set ctags = true
+  -d           set defines = true
+  -i           set inline = true
+  -n           set noprocess = true
+  -p           set preprocess = true
+  -r           set recurse = true
+
+Editing:
+  -a<append>   append string           *
+  -e<prepend>  prepend string          *
+  -l<replace>  replace string          *
+  -o#lines     comment X lines         *
+  -s<search>   search string           *
+  -x<regex>    regex search string     *
+
+* supports multiple instances
+"""
+
+proc runCli*() =
+  var
+    cfg = newOrderedTable[string, string]()
+    files: seq[string]
+    uniq = 1
+
+  gProjectDir = getCurrentDir().sanitizePath
+  for param in commandLineParams():
+    let flag = if param.len() <= 2: param else: param[0..<2]
+
+    if fileExists(param):
+      if param.splitFile().ext.toLowerAscii() == ".cfg":
+        runCfg(param)
+      else:
+        files.add(param)
+
+    elif flag == "-C":
+      cfg["compile." & $uniq] = param[2..^1]
+    elif flag == "-E":
+      gExcludes.add(param[2..^1].addEnv().sanitizePath)
+    elif flag == "-F":
+      if cfg.hasKey("flags"):
+        cfg["flags"] = cfg["flags"] & " " & param[2..^1]
+      else:
+        cfg["flags"] = param[2..^1]
+    elif flag == "-I":
+      gIncludes.add(param[2..^1].addEnv().sanitizePath)
+    elif flag == "-O":
+      setOutputDir(param[2..^1])
+    elif flag == "-P":
+      if cfg.hasKey("ppflags"):
+        cfg["ppflags"] = cfg["ppflags"] & " " & param[2..^1]
+      else:
+        cfg["ppflags"] = param[2..^1]
+
+    elif flag == "-c":
+      cfg["ctags"] = "true"
+    elif flag == "-d":
+      cfg["defines"] = "true"
+    elif flag == "-i":
+      cfg["inline"] = "true"
+    elif flag == "-n":
+      cfg["noprocess"] = "true"
+    elif flag == "-p":
+      cfg["preprocess"] = "true"
+    elif flag == "-r":
+      cfg["recurse"] = "true"
+
+    elif flag == "-a":
+      cfg["append." & $uniq] = param[2..^1]
+    elif flag == "-e":
+      cfg["prepend." & $uniq] = param[2..^1]
+    elif flag == "-l":
+      cfg["replace." & $uniq] = param[2..^1]
+    elif flag == "-o":
+      cfg["comment." & $uniq] = param[2..^1]
+    elif flag == "-s":
+      cfg["search." & $uniq] = param[2..^1]
+    elif flag == "-x":
+      cfg["regex." & $uniq] = param[2..^1]
+
+    elif param == "-h" or param == "-?" or param == "--help":
+      echo gHelp
+      quit(0)
+
+    uniq += 1
+
+  for file in files:
+    runFile(file, cfg)

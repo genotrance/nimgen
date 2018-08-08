@@ -97,8 +97,6 @@ suite "test file ops":
     dataDir.createDir()
 
   setup:
-    if testfilename.existsFile():
-      removeFile(testfilename)
     writeFile(testfilename, testFileContent)
 
   ################### Prepend #######################

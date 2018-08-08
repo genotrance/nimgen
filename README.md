@@ -198,6 +198,41 @@ The following key only applies before processing and allows renaming the generat
 
   `$replace(srch1=repl1, srch2=reply2)` = rename specific portions in `$nimout`
 
+__Command Line__
+
+A subset of capabilities are available through the command line to enable quick tests using nimgen. Command line flags only apply to source files specified on the command line and do not influence any ```cfg``` files which are expected to be self-sufficient.
+
+```
+Usage:
+  nimgen [options] file.cfg|file.h ...
+
+Params:
+  -C<compile>  add compile entry       *
+  -E<exclude>  add n.exclude entry     *
+  -F<flags>    set c2nim flags         *
+  -I<include>  add n.include dir       *
+  -O<outdir>   set output directory
+  -P<ppflags>  set preprocessor flags  *
+
+Options:
+  -c           set ctags = true
+  -d           set defines = true
+  -i           set inline = true
+  -n           set noprocess = true
+  -p           set preprocess = true
+  -r           set recurse = true
+
+Editing:
+  -a<append>   append string           *
+  -e<prepend>  prepend string          *
+  -l<replace>  replace string          *
+  -o#lines     comment X lines         *
+  -s<search>   search string           *
+  -x<regex>    regex search string     *
+
+* supports multiple instances
+```
+
 __Feedback__
 
 Nimgen is a work in progress and any feedback or suggestions are welcome. It is hosted on [GitHub](https://github.com/genotrance/nimgen) with an MIT license so issues, forks and PRs are most appreciated. Also join us at https://gitter.im/nimgen/Lobby to chat about nimgen and the future of Nim wrappers.
