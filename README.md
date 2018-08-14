@@ -1,5 +1,5 @@
 [![Chat on Gitter](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/nimgen/Lobby)
-[![Build status](https://ci.appveyor.com/api/projects/status/05t5ja88lmv1rt3r?svg=true)](https://ci.appveyor.com/project/genotrance/nimgen)
+[![Build status](https://ci.appveyor.com/api/projects/status/05t5ja88lmv1rt3r/branch/master?svg=true)](https://ci.appveyor.com/project/genotrance/nimgen/branch/master)
 
 Nimgen is a helper for [c2nim](https://github.com/nim-lang/c2nim/) to simplify and automate the wrapping of C libraries.
 
