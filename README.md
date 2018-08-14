@@ -1,3 +1,6 @@
+[![Chat on Gitter](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/nimgen/Lobby)
+[![Build status](https://ci.appveyor.com/api/projects/status/05t5ja88lmv1rt3r/branch/master?svg=true)](https://ci.appveyor.com/project/genotrance/nimgen/branch/master)
+
 Nimgen is a helper for [c2nim](https://github.com/nim-lang/c2nim/) to simplify and automate the wrapping of C libraries.
 
 Nimgen can be used to automate the process of manipulating C files so that c2nim can be run on them without issues. This includes adding/removing code snippets, removal of complex preprocessor definitions that c2nim doesn't yet comprehend and recursively running on #include files.
