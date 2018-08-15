@@ -17,7 +17,7 @@ proc addEnv*(str: string): string =
 
   return newStr
 
-proc compile*(flags: string, dir="", file=""): string =
+proc compile*(cpl, flags: string): string =
   var data = ""
 
   proc fcompile(file: string): string =
@@ -27,18 +27,18 @@ proc compile*(flags: string, dir="", file=""): string =
     for f in walkFiles(dir):
       data &= fcompile(f) & "\n"
 
-  if dir != "":
-    if dir.contains("*") or dir.contains("?"):
-      dcompile(dir)
-    elif dirExists(dir):
+  if cpl.contains("*") or cpl.contains("?"):
+    dcompile(cpl)
+  else:
+    let fcpl = search(cpl)
+    if getFileInfo(fcpl).kind == pcFile:
+      data &= fcompile(fcpl) & "\n"
+    elif getFileInfo(fcpl).kind == pcDir:
       if flags.contains("cpp"):
         for i in @["*.C", "*.cpp", "*.c++", "*.cc", "*.cxx"]:
-          dcompile(dir / i)
+          dcompile(fcpl / i)
       else:
-        dcompile(dir / "*.c")
-
-  if file != "" and fileExists(file):
-    data &= fcompile(file) & "\n"
+        dcompile(fcpl / "*.c")
 
   return data
 

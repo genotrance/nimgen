@@ -100,11 +100,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
 
   # Include {.compile.} directives
   for cpl in c2nimConfig.compile:
-    let fcpl = search(cpl)
-    if getFileInfo(fcpl).kind == pcFile:
-      prepend(outfile, compile(c2nimConfig.flags, file=fcpl))
-    else:
-      prepend(outfile, compile(c2nimConfig.flags, dir=fcpl))
+    prepend(outfile, compile(cpl, c2nimConfig.flags))
 
   # Add any pragmas
   if outpragma != "":
