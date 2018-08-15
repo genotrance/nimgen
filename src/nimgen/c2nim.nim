@@ -29,7 +29,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     outlib = ""
     outpragma = ""
 
-  passC = "import ospaths, strutils\n"
+  passC = "import strutils\n"
 
   passC &= """const sourcePath = currentSourcePath().split({'\\', '/'})[0..^2].join("/")""" & "\n"
 
@@ -102,9 +102,9 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   for cpl in c2nimConfig.compile:
     let fcpl = search(cpl)
     if getFileInfo(fcpl).kind == pcFile:
-      prepend(outfile, compile(file=fcpl))
+      prepend(outfile, compile(c2nimConfig.flags, file=fcpl))
     else:
-      prepend(outfile, compile(dir=fcpl))
+      prepend(outfile, compile(c2nimConfig.flags, dir=fcpl))
 
   # Add any pragmas
   if outpragma != "":

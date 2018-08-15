@@ -17,14 +17,25 @@ proc addEnv*(str: string): string =
 
   return newStr
 
-proc compile*(dir="", file=""): string =
+proc compile*(flags: string, dir="", file=""): string =
+  var data = ""
+
   proc fcompile(file: string): string =
     return "{.compile: \"$#\".}" % file.replace("\\", "/")
 
-  var data = ""
-  if dir != "" and dirExists(dir):
-    for f in walkFiles(dir / "*.c"):
+  proc dcompile(dir: string) =
+    for f in walkFiles(dir):
       data &= fcompile(f) & "\n"
+
+  if dir != "":
+    if dir.contains("*") or dir.contains("?"):
+      dcompile(dir)
+    elif dirExists(dir):
+      if flags.contains("cpp"):
+        for i in @["*.C", "*.cpp", "*.c++", "*.cc", "*.cxx"]:
+          dcompile(dir / i)
+      else:
+        dcompile(dir / "*.c")
 
   if file != "" and fileExists(file):
     data &= fcompile(file) & "\n"

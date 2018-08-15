@@ -167,7 +167,7 @@ The following keys apply to library source code and help with generating the .ni
 
 Multiple entries for the all following keys are possible by appending any .string to the key. E.g. dynlib.win, compile.dir
 
-```compile``` = file or dir of files of source code to {.compile.} into generated .nim
+```compile``` = file or dir of files of source code to {.compile.} into generated .nim. If directory, picks *.c if C mode and *.cxx, *.cpp, *.cc, *.c++ and *.C for cpp mode. Dir can also include wildcards. e.g. compile = """dir/A*.cxx"""
 
 ```pragma``` = pragmas to define in generated .nim file. E.g. pragma = "passL: \"-lssl\"" => {.passL: "-lssl".}
 
