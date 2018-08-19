@@ -111,7 +111,7 @@ proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
 
   # Include content only from file
   var
-    rdata: Rope
+    rdata = rope("")
     start = false
     sfile = file.sanitizePath
 
