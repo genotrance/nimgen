@@ -63,9 +63,9 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
           gExcludes.delete(gExcludes.find(file))
         sfile = file
         gDoneRecursive.add(sfile)
-      elif action in @["prepend", "append", "replace", "comment",
-                       "rename", "compile", "dynlib", "pragma",
-                       "pipe"] and sfile != "":
+      elif action in @["prepend", "append", "replace", "move", "comment",
+                       "rename", "compile", "dynlib", "pragma", "pipe"] and
+          sfile != "":
         if action == "prepend":
           if srch != "":
             prepend(sfile, cfg[act], cfg[srch])
@@ -81,6 +81,11 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
             freplace(sfile, cfg[srch], cfg[act])
           elif rgx != "":
             freplace(sfile, toPattern(cfg[rgx]), cfg[act])
+        elif action == "move":
+          if srch != "":
+            move(sfile, cfg[srch], cfg[act])
+          elif rgx != "":
+            move(sfile, toPattern(cfg[rgx]), cfg[act])
         elif action == "comment":
           if srch != "":
             comment(sfile, cfg[srch], cfg[act])

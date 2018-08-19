@@ -21,7 +21,19 @@ proc compile*(cpl, flags: string): string =
   var data = ""
 
   proc fcompile(file: string): string =
-    return "{.compile: \"$#\".}" % file.replace("\\", "/")
+    let fn = file.splitFile().name
+    var
+      ufn = fn
+      uniq = 1
+    while ufn in gCompile:
+      ufn = fn & $uniq
+      uniq += 1
+
+    gCompile.add(ufn)
+    if fn == ufn:
+      return "{.compile: \"$#\".}" % file.replace("\\", "/")
+    else:
+      return "{.compile: (\"../$#\", \"$#.o\").}" % [file.replace("\\", "/"), ufn]
 
   proc dcompile(dir: string) =
     for f in walkFiles(dir):

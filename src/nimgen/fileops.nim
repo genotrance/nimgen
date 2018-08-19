@@ -31,14 +31,25 @@ proc append*(file: string, data: string, search="") =
       if idx != -1:
         content = content[0..<idy] & data & content[idy..<content.len()]
 
-proc freplace*(file: string, pattern: string, repl="") =
-  withFile(file):
-    if pattern in content:
-      content = content.replace(pattern, repl)
-
-proc freplace*(file: string, pattern: Regex, repl="") =
+proc freplace*(file: string, pattern: string|Regex, repl="") =
   withFile(file):
     content = content.replace(pattern, repl)
+
+proc move*(file: string, pattern: string|Regex, move: string) =
+  var tomove: seq[string] = @[]
+  withFile(file):
+    when pattern is string:
+      tomove.add(pattern)
+
+    when pattern is Regex:
+      var ms = content.findAll(pattern)
+      for i, m in ms:
+        tomove.add(content[m.group(0)[0]])
+
+    content = content.replace(pattern, "")
+
+  for i in tomove:
+    append(file, i, move)
 
 proc comment*(file: string, pattern: string, numlines: string) =
   let

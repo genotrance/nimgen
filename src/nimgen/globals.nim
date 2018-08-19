@@ -21,6 +21,7 @@ var
   gExcludes*: seq[string] = @[]
   gRenames* = initTable[string, string]()
   gWildcards* = newConfig()
+  gCompile*: seq[string] = @[]
 
 type
   c2nimConfigObj* = object

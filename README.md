@@ -189,6 +189,8 @@ The following keys apply to library source code (before processing) and generate
 
 ```replace``` = string value to replace search string in file. Regex captures can be referred to using $1, $2, etc.
 
+```move``` = search string providing context for location to move the results of a preceding search or regex match
+
 ```comment``` = number of lines to comment from search location
 
 The following key only applies before processing and allows renaming the generated .nim files as required to enable successful wrapping. This may be for organizational purposes or to prevent usage of non-nim supported strings in module names (E.g. first letter is a number). Destination is relative to output directory if defined.
