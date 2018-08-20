@@ -1,4 +1,4 @@
-import os, osproc, regex, ropes, streams, strutils
+import os, osproc, regex, streams, strutils
 
 import globals
 
@@ -111,7 +111,7 @@ proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
 
   # Include content only from file
   var
-    rdata = rope("")
+    rdata: seq[string] = @[]
     start = false
     sfile = file.sanitizePath
 
@@ -131,9 +131,9 @@ proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
             line.multiReplace([("_Noreturn", ""), ("(())", ""), ("WINAPI", ""),
                                ("__attribute__", ""), ("extern \"C\"", "")])
               .replace(re"\(\([_a-z]+?\)\)", "")
-              .replace(re"\(\(__format__[\s]*\(__[gnu_]*printf__, [\d]+, [\d]+\)\)\);", ";") & "\n"
+              .replace(re"\(\(__format__[\s]*\(__[gnu_]*printf__, [\d]+, [\d]+\)\)\);", ";")
           )
-  return $rdata
+  return rdata.join("\n")
 
 proc runCtags*(file: string): string =
   var
