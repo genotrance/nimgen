@@ -65,6 +65,8 @@ To see examples of nimgen in action check out the following wrappers:-
         * git checkout
     * [libsvm](https://github.com/genotrance/libsvm) - libsvm wrapper: [docs](http://nimgen.genotrance.com/libsvm)
         * git sparse checkout
+    * [duktape-nim](https://github.com/manguluka/duktape-nim) - Duktape wrapper
+        * git checkout
 
 * Compile in as static binary
     * [nimssh2](https://github.com/genotrance/nimssh2) - libssh2 wrapper: [docs](http://nimgen.genotrance.com/nimssh2)
