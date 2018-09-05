@@ -11,7 +11,7 @@ skipDirs = @["nimgen", "tests"]
 
 # Dependencies
 
-requires "nim >= 0.17.0", "c2nim >= 0.9.13", "regex >= 0.7.1"
+requires "nim >= 0.17.0", "c2nim >= 0.9.13", "regex#head"
 
 task test, "Test nimgen":
     exec "nim c -r tests/rununittests.nim"
