@@ -61,6 +61,8 @@ To see examples of nimgen in action check out the following wrappers:-
         * git checkout
     * [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper: [docs](http://nimgen.genotrance.com/nimssl)
         * git sparse checkout
+    * [nimtess2](https://github.com/genotrance/nimtess2) - libtess2 wrapper: [docs](http://nimgen.genotrance.com/nimtess2)
+        * git checkout
     * [libsvm](https://github.com/genotrance/libsvm) - libsvm wrapper: [docs](http://nimgen.genotrance.com/libsvm)
         * git sparse checkout
 

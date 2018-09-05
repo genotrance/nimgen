@@ -3,7 +3,7 @@ import distros, ospaths, strutils
 var
   full = true
   comps = @["libsvm", "nim7z", "nimarchive", "nimbass", "nimbigwig", "nimclipboard",
-            "nimfuzz", "nimpcre", "nimrax", "nimssl", "nimssh2"]
+            "nimfuzz", "nimpcre", "nimrax", "nimssl", "nimssh2", "nimtess2"]
 
 if detectOs(Windows):
   comps.add("nimkerberos")
