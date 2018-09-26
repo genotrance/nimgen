@@ -42,7 +42,7 @@ To see examples of nimgen in action check out the following wrappers:-
     * [nim-clblast](https://github.com/numforge/nim-clblast) - OpenCL BLAS wrapper
         * static
 
-* Compile C code into binary
+* Compile C/C++ code into binary
     * [nim7z](https://github.com/genotrance/nim7z) - 7z decoder wrapper: [docs](http://nimgen.genotrance.com/nim7z)
         * git sparse checkout
     * [nimarchive](https://github.com/genotrance/nimarchive) - libarchive wrapper: [docs](http://nimgen.genotrance.com/nimarchive)
@@ -51,10 +51,14 @@ To see examples of nimgen in action check out the following wrappers:-
         * git checkout
     * [nimclipboard](https://github.com/genotrance/nimclipboard) - libclipboard wrapper: [docs](http://nimgen.genotrance.com/nimclipboard)
         * git checkout
+    * [nimfastText](https://github.com/genotrance/nimfastText) - fastText wrapper: [docs](http://nimgen.genotrance.com/nimfastText)
+        * git sparse checkout
     * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper: [docs](http://nimgen.genotrance.com/nimfuzz)
         * download header file
     * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper: [docs](http://nimgen.genotrance.com/nimkerberos)
         * git sparse checkout
+    * [nimnuklear](https://github.com/genotrance/nimnuklear) - nuklear wrapper: [docs](https://nimgen.genotrance.com/nimnuklear)
+        * git sparse checkout 
     * [nimpcre](https://github.com/genotrance/nimpcre) - PCRE wrapper: [docs](http://nimgen.genotrance.com/nimpcre)
         * git checkout
     * [nimrax](https://github.com/genotrance/nimrax) - Radix tree wrapper: [docs](http://nimgen.genotrance.com/nimrax)
