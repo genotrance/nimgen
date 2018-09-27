@@ -31,7 +31,7 @@ for:
     BASE_DIR: c:\projects
 
   install:
-    - CD %BASE_DIR%
+    - CD c:\
     - IF not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
     - 7z x -y "%MINGW_ARCHIVE%"> nul
     - IF not exist "%LIBSSH2_ARCHIVE%" appveyor DownloadFile "%LIBSSH2_URL%" -FileName "%LIBSSH2_ARCHIVE%"
@@ -42,7 +42,7 @@ for:
     - 7z x -y "%LIBCRYPTO_ARCHIVE2%"> nul
     - IF not exist "%NIM_ARCHIVE%" appveyor DownloadFile "%NIM_URL%" -FileName "%NIM_ARCHIVE%"
     - 7z x -y "%NIM_ARCHIVE%"> nul
-    - SET PATH=%BASE_DIR%\%MINGW_DIR%\bin;%BASE_DIR%\%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
+    - SET PATH=c:\%MINGW_DIR%\bin;c:\%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
     - CD %BASE_DIR%\nimgen
     # - git clone --depth 1 https://github.com/nim-lang/nim
     # - cd nim
@@ -59,16 +59,18 @@ for:
     # - cd ..
 
   on_finish:
-    - 7z a -r buildlogs-win.zip %USERPROFILE%\.nimble\pkgs
-    - appveyor PushArtifact buildlogs-win.zip
+    - 7z a -r buildlogs-win-pkgs.zip %USERPROFILE%\.nimble\pkgs
+    - appveyor PushArtifact buildlogs-win-pkgs.zip
+    - 7z a -r buildlogs-win-projects.zip %BASE_DIR%
+    - appveyor PushArtifact buildlogs-win-projects.zip
     - 7z a -r nimgen-docs.zip %BASE_DIR%\nimgen\web
     - appveyor PushArtifact nimgen-docs.zip
 
   cache:
-    - c:\projects\i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
-    - c:\projects\mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
-    - c:\projects\mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
-    - c:\projects\nim-0.18.0_x32.zip
+    - c:\i686-8.1.0-release-posix-dwarf-rt_v6-rev0.7z
+    - c:\mingw-w64-i686-libssh2-1.8.0-1-any.pkg.tar.xz
+    - c:\mingw-w64-i686-openssl-1.0.2.o-1-any.pkg.tar.xz
+    - c:\nim-0.18.0_x32.zip
 
 -
   matrix:
@@ -84,7 +86,7 @@ for:
   install:
     - sudo apt -qq update
     - sudo apt -qq install --yes python-pygments libssh2-1-dev libgcrypt20-dev libgpg-error-dev
-    - cd $BASE_DIR
+    - cd /home/appveyor
     - if [ ! -e $NIM_ARCHIVE ]; then curl -s -o $NIM_ARCHIVE $NIM_URL; fi
     - tar xJf $NIM_ARCHIVE
     - cd $NIM_VERSION
@@ -92,15 +94,17 @@ for:
     - bin/nim c -d:release koch
     - ./koch boot -d:release
     - ./koch nimble -d:release
-    - export PATH=$BASE_DIR/$NIM_VERSION/bin:~/.nimble/bin:$PATH
+    - export PATH=/home/appveyor/$NIM_VERSION/bin:~/.nimble/bin:$PATH
     - cd $BASE_DIR/nimgen
 
   on_finish:
-    - zip -r -q buildlogs-lin.zip ~/.nimble/pkgs
-    - appveyor PushArtifact buildlogs-lin.zip
+    - zip -r -q buildlogs-lin-pkgs.zip ~/.nimble/pkgs
+    - appveyor PushArtifact buildlogs-lin-pkgs.zip
+    - zip -r -q buildlogs-lin-projects.zip $BASE_DIR
+    - appveyor PushArtifact buildlogs-lin-projects.zip
 
   cache:
-  - /home/appveyor/projects/nim-0.18.0.tar.xz
+  - /home/appveyor/nim-0.18.0.tar.xz
 
 build_script:
   - nimble install -y
