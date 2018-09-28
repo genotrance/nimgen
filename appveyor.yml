@@ -61,7 +61,7 @@ for:
   on_finish:
     - 7z a -r buildlogs-win-pkgs.zip %USERPROFILE%\.nimble\pkgs
     - appveyor PushArtifact buildlogs-win-pkgs.zip
-    - 7z a -r buildlogs-win-projects.zip %BASE_DIR%
+    - 7z a -r buildlogs-win-projects.zip c:\projects
     - appveyor PushArtifact buildlogs-win-projects.zip
     - 7z a -r nimgen-docs.zip %BASE_DIR%\nimgen\web
     - appveyor PushArtifact nimgen-docs.zip
