@@ -2,15 +2,14 @@ import distros, ospaths, strutils
 
 var
   full = true
-  comps = @["libsvm", "nim7z", "nimarchive", "nimbass", #"nimbigwig",
+  comps = @["libsvm", "nim7z", "nimarchive", "nimbass", "nimbigwig",
             "nimclipboard", "nimfastText", "nimfuzz", "nimmonocypher",
             "nimnuklear", "nimpcre", "nimrax", "nimssl", "nimssh2",
-            "nimtess2"
+            "nimtess2", "nimzbar"
           ]
 
 if detectOs(Windows):
   comps.add("nimkerberos")
-  comps.add("nimzbar")
 
 if paramCount() > 2:
   for i in 3 .. paramCount():
