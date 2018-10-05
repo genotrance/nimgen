@@ -3,7 +3,8 @@ import distros, ospaths, strutils
 var
   full = true
   comps = @["libsvm", "nim7z", "nimarchive", "nimbass", "nimbigwig",
-            "nimclipboard", "nimfastText", "nimfuzz", "nimmonocypher",
+            "nimclipboard", #"nimfastText",
+            "nimfuzz", "nimmonocypher",
             "nimnuklear", "nimpcre", "nimrax", "nimssl", "nimssh2",
             "nimtess2", "nimzbar"
           ]
