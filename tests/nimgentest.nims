@@ -3,11 +3,14 @@ import distros, ospaths, strutils
 var
   full = true
   comps = @["libsvm", "nim7z", "nimarchive", "nimbass", "nimbigwig",
-            "nimclipboard", #"nimfastText",
-            "nimfuzz", "nimmonocypher",
+            "nimclipboard", "nimfuzz", "nimmonocypher",
             "nimnuklear", "nimpcre", "nimrax", "nimssl", "nimssh2",
             "nimtess2", "nimzbar"
           ]
+
+var nimver = staticExec("nim -v").split("\n")[0].split(" ")[3]
+if nimver >= "0.19.0":
+  comps.add("nimfastText")
 
 if detectOs(Windows):
   comps.add("nimkerberos")
