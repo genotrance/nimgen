@@ -85,6 +85,7 @@ for:
   install:
     - sudo apt -qq update
     - sudo apt -qq install --yes python-pygments libssh2-1-dev libgcrypt20-dev libgpg-error-dev
+    - mkdir /home/appveyor/binaries
     - cd /home/appveyor/binaries
     - if [ ! -e nim-$NIM_VERSION ]; then
         curl -s -o nim-$nim_version.tar.xz https://nim-lang.org/download/nim-$nim_version.tar.xz &&
