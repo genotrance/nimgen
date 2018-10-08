@@ -89,7 +89,7 @@ for:
     - cd /home/appveyor/binaries
     - if [ ! -e nim-$NIM_VERSION ]; then
         curl -s -o nim-$NIM_VERSION.tar.xz https://nim-lang.org/download/nim-$NIM_VERSION.tar.xz &&
-        tar xJf nim-$nim_version.tar.xz &&
+        tar xJf nim-$NIM_VERSION.tar.xz &&
         cd nim-$NIM_VERSION &&
         sh build.sh &&
         bin/nim c -d:release koch &&
