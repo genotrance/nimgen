@@ -7,6 +7,11 @@ image:
 matrix:
   fast_finish: true
 
+environment:
+  matrix:
+    - NIM_VERSION: 0.18.0
+    - NIM_VERSION: 0.19.0
+
 for:
 -
   matrix:
@@ -20,13 +25,11 @@ for:
     SFNET_URL: https://sourceforge.net/projects/msys2/files/REPOS/MINGW/i686
     LIBSSH2_ARCHIVE: mingw-w64-i686-libssh2-1.8.0-1-any.pkg
     LIBCRYPTO_ARCHIVE: mingw-w64-i686-openssl-1.0.2.o-1-any.pkg
-    matrix:
-      - NIM_VERSION: 0.18.0
-      - NIM_VERSION: 0.19.0
 
-  install:
+    install:
     - CD c:\
     - IF not exist "binaries" (
+      echo $NIM_VERSION &&
       MKDIR binaries &&
       CD binaries &&
       appveyor DownloadFile "%MINGW_URL%/%MINGW_ARCHIVE%/download" -FileName "%MINGW_ARCHIVE%" &&
@@ -77,20 +80,14 @@ for:
     only:
       - image: Ubuntu
 
-  environment:
-    matrix:
-      - NIM_VERSION: 0.18.0
-      - NIM_VERSION: 0.19.0
-
   install:
     - sudo apt -qq update
     - sudo apt -qq install --yes python-pygments libssh2-1-dev libgcrypt20-dev libgpg-error-dev
-    - echo $NIM_VERSION
-    - mkdir /home/appveyor/binaries
-    - cd /home/appveyor/binaries
-    - if [ ! -e nim-$NIM_VERSION ]; then
+    - if [ ! -e /home/appveyor/binaries ]; then
+        echo $NIM_VERSION &&
+        mkdir /home/appveyor/binaries &&
+        cd /home/appveyor/binaries &&
         curl -s -o nim-$NIM_VERSION.tar.xz https://nim-lang.org/download/nim-$NIM_VERSION.tar.xz &&
-        ls -l &&
         tar xJf nim-$NIM_VERSION.tar.xz &&
         cd nim-$NIM_VERSION &&
         sh build.sh &&
