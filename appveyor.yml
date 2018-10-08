@@ -26,7 +26,7 @@ for:
     LIBSSH2_ARCHIVE: mingw-w64-i686-libssh2-1.8.0-1-any.pkg
     LIBCRYPTO_ARCHIVE: mingw-w64-i686-openssl-1.0.2.o-1-any.pkg
 
-    install:
+  install:
     - CD c:\
     - IF not exist "binaries" (
       echo $NIM_VERSION &&
