@@ -201,6 +201,8 @@ proc setOutputDir(dir: string) =
           quit(1)
   createDir(gOutput)
 
+  gGitOutput = gOutput
+
 proc runCfg*(cfg: string) =
   if not fileExists(cfg):
     echo "Config doesn't exist: " & cfg

@@ -81,7 +81,6 @@ proc gitCheckout*(file: string) =
 proc gitPull() =
   if gGitCheckout.len() != 0:
     echo "Checking out " & gGitCheckout
-    #discard execProc("git fetch --depth=1 origin " & gGitCheckout)
     discard execProc("git pull --tags origin master")
     discard execProc("git checkout " & gGitCheckout)
     gGitCheckout = ""
