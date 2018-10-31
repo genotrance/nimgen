@@ -69,7 +69,7 @@ for:
     - appveyor PushArtifact buildlogs-win-pkgs.zip
     - 7z a -r buildlogs-win-projects.zip c:\projects\*
     - appveyor PushArtifact buildlogs-win-projects.zip
-    - 7z a -r nimgen-docs.zip %BASE_DIR%\nimgen\web
+    - 7z a -r nimgen-docs.zip c:\projects\nimgen\web
     - appveyor PushArtifact nimgen-docs.zip
 
   cache:
