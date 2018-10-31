@@ -42,9 +42,9 @@ for:
       del "%LIBSSH2_ARCHIVE%.tar" &&
       appveyor DownloadFile "%SFNET_URL%/%LIBCRYPTO_ARCHIVE%.tar.xz/download" -FileName "%LIBCRYPTO_ARCHIVE%.tar.xz" &&
       7z x -y "%LIBCRYPTO_ARCHIVE%.tar.xz"> nul &&
-      del "%LIBCRYPTO_ARCHIVE%.tar.xz"
+      del "%LIBCRYPTO_ARCHIVE%.tar.xz" &&
       7z x -y "%LIBCRYPTO_ARCHIVE2%.tar"> nul &&
-      del "%LIBCRYPTO_ARCHIVE%.tar"
+      del "%LIBCRYPTO_ARCHIVE%.tar" &&
       appveyor DownloadFile "https://nim-lang.org/download/nim-%NIM_VERSION%_x%ARCH%.zip" -FileName "nim-%NIM_VERSION%_x%ARCH%.zip" &&
       7z x -y "nim-%NIM_VERSION%_x%ARCH%.zip"> nul &&
       del "nim-%NIM_VERSION%_x%ARCH%.zip")
