@@ -16,8 +16,7 @@ proc getNimout*(file: string, rename=true): string =
   if gRenames.hasKey(file):
     result = gRenames[file]
 
-  if not dirExists(parentDir(result)):
-    createDir(parentDir(result))
+  createDir(parentDir(result))
 
 proc exclude*(file: string): bool =
   for excl in gExcludes:

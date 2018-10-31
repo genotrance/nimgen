@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.4.0"
+version       = "0.5.0"
 author        = "genotrance"
 description   = "c2nim helper to simplify and automate the wrapping of C libraries"
 license       = "MIT"
@@ -11,7 +11,7 @@ skipDirs = @["nimgen", "tests"]
 
 # Dependencies
 
-requires "nim >= 0.17.0", "c2nim >= 0.9.13", "regex <= 0.7.4"
+requires "nim >= 0.17.0", "c2nim >= 0.9.13", "regex >= 0.10.0"
 
 task test, "Test nimgen":
     exec "nim c -r tests/rununittests.nim"

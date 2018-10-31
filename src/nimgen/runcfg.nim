@@ -6,18 +6,19 @@ proc `[]`*(table: OrderedTableRef[string, string], key: string): string =
   ## Gets table values with env vars inserted
   tables.`[]`(table, key).addEnv
 
-proc getKey(ukey: string): tuple[key: string, val: bool] =
-  var kv = ukey.replace(re"\..*", "").split("-", 1)
+proc getKey(ukey: string, section = false): tuple[key: string, val: bool] =
+  var kv = if not section: ukey.replace(re"\..*", "").split("-", 1) else: ukey.split("-", 1)
   if kv.len() == 1:
     kv.add("")
 
   if kv[1] == "":
     return (kv[0], true)
 
-  for ostyp in kv[1].split(","):
+  for ostyp in kv[1].split("-"):
     if (ostyp == "win" and defined(Windows)) or
        (ostyp == "lin" and defined(Linux)) or
-       ((ostyp == "osx" or ostyp == "mac") and defined(MacOSX)):
+       ((ostyp == "osx" or ostyp == "mac") and defined(MacOSX)) or
+       (ostyp == "unix" and (defined(Linux) or defined(MacOSX))):
       return (kv[0], true)
 
   return (kv[0], false)
@@ -26,6 +27,7 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
   var
     cfg = cfgin
     sfile = search(file)
+    nowildcard = false
 
   if sfile in gDoneRecursive:
     return
@@ -34,13 +36,20 @@ proc runFile*(file: string, cfgin: OrderedTableRef = newOrderedTable[string, str
     echo "Processing " & sfile
     gDoneRecursive.add(sfile)
 
-  for pattern in gWildcards.keys():
-    var m: RegexMatch
-    let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
-    if file.find(toPattern(pat), m):
-      echo "  Appending keys for wildcard " & pattern
-      for key in gWildcards[pattern].keys():
-        cfg[key & "." & pattern] = gWildcards[pattern][key]
+  for act in cfg.keys():
+    let (action, val) = getKey(act)
+    if val == true and action == "nowildcard" and cfg[act] == "true":
+      nowildcard = true
+      break
+
+  if not nowildcard:
+    for pattern in gWildcards.keys():
+      var m: RegexMatch
+      let pat = pattern.replace(".", "\\.").replace("*", ".*").replace("?", ".?")
+      if file.find(toPattern(pat), m):
+        echo "  Appending keys for wildcard " & pattern
+        for key in gWildcards[pattern].keys():
+          cfg[key & "." & pattern] = gWildcards[pattern][key]
 
   var
     srch = ""
@@ -200,92 +209,99 @@ proc runCfg*(cfg: string) =
   gProjectDir = parentDir(cfg.expandFilename()).sanitizePath
 
   gConfig = loadConfig(cfg)
+  gCppCompiler = getEnv(cppCompilerEnv, defaultCppCompiler).quoteShell
+  gCCompiler = getEnv(cCompilerEnv, defaultCCompiler).quoteShell
+  gGitOutput = gOutput
 
-  if gConfig.hasKey("n.global"):
-    if gConfig["n.global"].hasKey("output"):
-      setOutputDir(gConfig["n.global"]["output"])
-
-    if gConfig["n.global"].hasKey("cpp_compiler"):
-      gCppCompiler = gConfig["n.global"]["cpp_compiler"]
-    else:
-      # Reset on a per project basis
-      gCppCompiler = getEnv(cppCompilerEnv, defaultCppCompiler)
-
-    if gConfig["n.global"].hasKey("c_compiler"):
-      gCCompiler = gConfig["n.global"]["c_compiler"]
-    else:
-      # Reset on a per project basis
-      gCCompiler = getEnv(cCompilerEnv, defaultCCompiler)
-
-    gCppCompiler = gCppCompiler.quoteShell
-    gCCompiler = gCCompiler.quoteShell
-
-    if gConfig["n.global"].hasKey("filter"):
-      gFilter = gConfig["n.global"]["filter"]
-    if gConfig["n.global"].hasKey("quotes"):
-      if gConfig["n.global"]["quotes"] == "false":
-        gQuotes = false
-
-  if gConfig.hasKey("n.include"):
-    for inc in gConfig["n.include"].keys():
-      gIncludes.add(inc.addEnv().sanitizePath)
-
-  if gConfig.hasKey("n.exclude"):
-    for excl in gConfig["n.exclude"].keys():
-      gExcludes.add(excl.addEnv().sanitizePath)
-
-  if gConfig.hasKey("n.prepare"):
-    for prep in gConfig["n.prepare"].keys():
-      let (key, val) = getKey(prep)
-      if val == true:
-        let prepVal = gConfig["n.prepare"][prep]
-        if key == "download":
-          downloadUrl(prepVal)
-        elif key == "extract":
-          extractZip(prepVal)
-        elif key == "git":
-          gitRemotePull(prepVal)
-        elif key == "gitremote":
-          gitRemotePull(prepVal, false)
-        elif key == "gitsparse":
-          gitSparseCheckout(prepVal)
-        elif key == "execute":
-          discard execProc(prepVal)
-        elif key == "copy":
-          doCopy(prepVal)
-
-  if gConfig.hasKey("n.wildcard"):
-    var wildcard = ""
-    for wild in gConfig["n.wildcard"].keys():
-      let (key, val) = getKey(wild)
-      if val == true:
-        if key == "wildcard":
-          wildcard = gConfig["n.wildcard"][wild]
-        else:
-          gWildcards.setSectionKey(wildcard, wild,
-                                   gConfig["n.wildcard"][wild])
-
-  for file in gConfig.keys():
-    if file in @["n.global", "n.include", "n.exclude",
-                 "n.prepare", "n.wildcard", "n.post"]:
+  for section in gConfig.keys():
+    let (sname, sval) = getKey(section, true)
+    if not sval:
       continue
 
-    if file == "n.sourcefile":
-      for pattern in gConfig["n.sourcefile"].keys():
-        for file in walkFiles(pattern.addEnv):
-          runFile(file)
-    else:
-      runFile(file, gConfig[file])
+    case sname:
+      of "n.global":
+        for glob in gConfig[section].keys():
+          let (key, val) = getKey(glob)
+          if val == true:
+            let globVal = gConfig[section][glob]
+            case key:
+              of "output":
+                setOutputDir(globVal)
+              of "cpp_compiler":
+                gCppCompiler = globVal.quoteShell
+              of "c_compiler":
+                gCCompiler = globVal.quoteShell
+              of "filter":
+                gFilter = globVal
+              of "quotes":
+                if globVal == "false":
+                  gQuotes = false
 
-  if gConfig.hasKey("n.post"):
-    for post in gConfig["n.post"].keys():
-      let (key, val) = getKey(post)
-      if val == true:
-        let postVal = gConfig["n.post"][post]
-        if key == "reset":
-          gitReset()
-        elif key == "execute":
-          discard execProc(postVal)
+      of "n.include":
+        for inc in gConfig[section].keys():
+          gIncludes.add(inc.addEnv().sanitizePath)
+
+      of "n.exclude":
+        for excl in gConfig[section].keys():
+          gExcludes.add(excl.addEnv().sanitizePath)
+
+      of "n.prepare":
+        for prep in gConfig[section].keys():
+          let (key, val) = getKey(prep)
+          if val == true:
+            let prepVal = gConfig[section][prep]
+            case key:
+              of "download":
+                downloadUrl(prepVal)
+              of "extract":
+                extractZip(prepVal)
+              of "gitcheckout":
+                gGitCheckout = prepVal
+              of "gitoutput":
+                gGitOutput = gOutput/prepVal
+                createDir(gGitOutput)
+              of "git":
+                gitRemotePull(prepVal)
+              of "gitremote":
+                gitRemotePull(prepVal, false)
+              of "gitsparse":
+                gitSparseCheckout(prepVal)
+              of "execute":
+                discard execAction(prepVal)
+              of "copy":
+                doCopy(prepVal)
+
+      of "n.wildcard":
+        var wildcard = ""
+        for wild in gConfig[section].keys():
+          let (key, val) = getKey(wild)
+          if val == true:
+            if key == "wildcard":
+              wildcard = gConfig[section][wild]
+            else:
+              gWildcards.setSectionKey(wildcard, wild,
+                                      gConfig[section][wild])
+
+      of "n.sourcefile":
+        for pattern in gConfig[section].keys():
+          for file in walkFiles(pattern.addEnv):
+            runFile(file)
+
+      of "n.post":
+        for post in gConfig[section].keys():
+          let (key, val) = getKey(post)
+          if val == true:
+            let postVal = gConfig[section][post]
+            case key:
+              of "gitoutput":
+                gGitOutput = gOutput/postVal
+              of "reset":
+                gitReset()
+              of "execute":
+                discard execAction(postVal)
+
+      else:
+        runFile(section, gConfig[section])
 
 let gHelp = """
 Nimgen is a helper for c2nim to simplify and automate the wrapping of C libraries

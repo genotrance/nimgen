@@ -15,6 +15,16 @@ proc execProc*(cmd: string): string =
     echo result
     quit(1)
 
+proc execAction*(cmd: string): string =
+  var ccmd = ""
+  when defined(Windows):
+    ccmd = "cmd /c " & cmd.replace("/", "\\")
+  when defined(Linux) or defined(MacOSX):
+    ccmd = "bash -c '" & cmd & "'"
+
+  echo "Running '" & ccmd[0..min(64, len(ccmd))] & "'"
+  return execProc(ccmd)
+
 proc extractZip*(zipfile: string) =
   var cmd = "unzip -o $#"
   if defined(Windows):
@@ -44,13 +54,16 @@ proc downloadUrl*(url: string) =
   if ext == ".zip":
     extractZip(file)
 
-proc gitReset*() =
-  echo "Resetting Git repo"
-
-  setCurrentDir(gOutput)
+template setGitDir() =
+  setCurrentDir(gGitOutput)
   defer: setCurrentDir(gProjectDir)
 
-  let cmd = "git reset --hard HEAD"
+proc gitReset*() =
+  echo "Resetting " & gGitOutput
+
+  setGitDir()
+
+  let cmd = "git reset --hard"
   while execCmdEx(cmd)[0].contains("Permission denied"):
     sleep(1000)
     echo "  Retrying ..."
@@ -58,45 +71,51 @@ proc gitReset*() =
 proc gitCheckout*(file: string) =
   echo "Resetting " & file
 
-  setCurrentDir(gOutput)
-  defer: setCurrentDir(gProjectDir)
+  setGitDir()
 
-  let cmd = "git checkout $#" % file.replace(gOutput & "/", "")
+  let cmd = "git checkout $#" % file.replace(gGitOutput & "/", "")
   while execCmdEx(cmd)[0].contains("Permission denied"):
     sleep(500)
     echo "  Retrying ..."
 
+proc gitPull() =
+  if gGitCheckout.len() != 0:
+    echo "Checking out " & gGitCheckout
+    #discard execProc("git fetch --depth=1 origin " & gGitCheckout)
+    discard execProc("git pull --tags origin master")
+    discard execProc("git checkout " & gGitCheckout)
+    gGitCheckout = ""
+  else:
+    echo "Pulling repository"
+    discard execProc("git pull --depth=1 origin master")
+
 proc gitRemotePull*(url: string, pull=true) =
-  if dirExists(gOutput/".git"):
+  if dirExists(gGitOutput/".git"):
     if pull:
       gitReset()
     return
 
-  setCurrentDir(gOutput)
-  defer: setCurrentDir(gProjectDir)
+  setGitDir()
 
-  echo "Setting up Git repo"
+  echo "Setting up Git repo: " & url
   discard execProc("git init .")
   discard execProc("git remote add origin " & url)
 
   if pull:
-    echo "Checking out artifacts"
-    discard execProc("git pull --depth=1 origin master")
+    gitPull()
 
 proc gitSparseCheckout*(plist: string) =
   let sparsefile = ".git/info/sparse-checkout"
-  if fileExists(gOutput/sparsefile):
+  if fileExists(gGitOutput/sparsefile):
     gitReset()
     return
 
-  setCurrentDir(gOutput)
-  defer: setCurrentDir(gProjectDir)
+  setGitDir()
 
   discard execProc("git config core.sparsecheckout true")
   writeFile(sparsefile, plist)
 
-  echo "Checking out artifacts"
-  discard execProc("git pull --depth=1 origin master")
+  gitPull()
 
 proc runPreprocess*(file, ppflags, flags: string, inline: bool): string =
   var

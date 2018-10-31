@@ -93,6 +93,8 @@ In all sections below, environment variables are supported via Nim's string inte
     "${output}/library/include"
     "${MY_INCLUDE_PATH}/include"
 
+Append -win, -lin and -mac/osx for OS specific sections and tasks. E.g. n.global-win, n.post-lin, download-win, execute-lin-mac.unique1. -unix can be used as a shortcut for -lin-mac.
+
 _[n.global]_
 
 ```output``` = name of the Nimble project once installed, also location to place generated .nim files
@@ -119,17 +121,21 @@ List of all directories or files to exclude from all parsing. If an entry here m
 
 _[n.prepare]_
 
-The following keys can be used to prepare dependencies such as downloading ZIP files, cloning Git repositories, etc. Multiple entries are possible by appending any .string to the key. E.g. download.file1. -win, -lin and -mac/osx can be used for OS specific tasks. E.g. download-win, execute-lin,mac.unique1
+The following keys can be used to prepare dependencies such as downloading ZIP files, cloning Git repositories, etc. Multiple entries are possible by appending any .string to the key. E.g. download.file1.
 
 ```download``` = url to download to the output directory. ZIP files are automatically extracted. Files are not redownloaded if already present but re-extracted
 
 ```extract``` = ZIP file to extract in case they are local and don't need to be downloaded. Path is relative to output directory.
 
-```git``` = url of Git repository to clone. Full repo is pulled so gitremote + gitsparse is preferable. Resets to HEAD if already present
+```gitcheckout``` = branch, commit or tag of repository to checkout in following Git command, resets after each use. Use "-b name" for branches
+
+```gitoutput`` = directory for all following Git commands relative to `n.global:output` [default: `n.global:output` directory]
+
+```git``` = url of Git repository to clone. Full repo is pulled so gitremote + gitsparse is preferable. Resets if already present
 
 ```gitremote``` = url of Git repository to partially checkout. Use with gitsparse to pull only files and dirs of interest
 
-```gitsparse``` = list of files and/or dirs to include in partial checkout, one per line. Resets to HEAD if already present
+```gitsparse``` = list of files and/or dirs to include in partial checkout, one per line. Resets if already present
 
 ```execute``` = command to run during preparation
 
@@ -139,7 +145,9 @@ _[n.post]_
 
 This section is the same as the prepare section, but for performing actions after the project has been processed.
 
-```reset``` = whether or not to perform a git reset on all files after processing [default: false]
+```gitoutput`` = output directory for Git reset [default: `n.global:output` directory]
+
+```reset``` = perform a Git reset on all files after processing [default: false]
 
 ```execute``` = command to run after processing
 
@@ -155,7 +163,7 @@ This section allows selection of multiple sourcefiles without requiring a detail
 
 _[sourcefile]_
 
-The following keys apply to library source code and help with generating the .nim files. -win, -lin and -osx can be used for OS specific tasks. E.g. dynlib-win, pragma-win
+The following keys apply to library source code and help with generating the .nim files. -win, -lin and -osx can be used for OS specific tasks. E.g. dynlib-win, pragma-win.
 
 ```recurse``` = find #include files and process them [default: false]
 
@@ -172,6 +180,8 @@ The following keys apply to library source code and help with generating the .ni
 ```ppflags``` = flags to pass to the preprocessor [default: ""]. -D for gcc and others may be useful
 
 ```noprocess``` = do not process this source file with c2nim [default: false] - this is useful if a file only needs to be manipulated
+
+```nowildcard``` = ignore any wildcard definitions for this sourcefile
 
 ```reset``` = reset the file back to original state after all processing [default: false]
 

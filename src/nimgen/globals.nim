@@ -7,21 +7,27 @@ const
   defaultCppCompiler* = "g++"
 
 var
-  gDoneRecursive*: seq[string] = @[]
-  gDoneInline*: seq[string] = @[]
-
-  gProjectDir* = ""
+  # Config
   gConfig*: Config
-  gFilter* = ""
-  gQuotes* = true
-  gCppCompiler* = getEnv(cppCompilerEnv, defaultCCompiler)
-  gCCompiler* = getEnv(cCompilerEnv, defaultCppCompiler)
-  gOutput* = ""
-  gIncludes*: seq[string] = @[]
   gExcludes*: seq[string] = @[]
+  gIncludes*: seq[string] = @[]
   gRenames* = initTable[string, string]()
   gWildcards* = newConfig()
+
+  # n.global
+  gOutput* = "."
+  gQuotes* = true
+  gFilter* = ""
+  gCppCompiler* = getEnv(cppCompilerEnv, defaultCCompiler)
+  gCCompiler* = getEnv(cCompilerEnv, defaultCppCompiler)
+
+  # State tracking
+  gGitCheckout* = ""
+  gGitOutput* = ""
+  gProjectDir* = ""
   gCompile*: seq[string] = @[]
+  gDoneInline*: seq[string] = @[]
+  gDoneRecursive*: seq[string] = @[]
 
 type
   c2nimConfigObj* = object

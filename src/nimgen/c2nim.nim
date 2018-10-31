@@ -2,8 +2,13 @@ import os, ospaths, regex, strutils
 
 import external, file, fileops, gencore, globals
 
-template relativePath(path: untyped): untyped =
-  path.multiReplace([(gOutput, ""), ("\\", "/"), ("//", "/")])
+proc relativePath(path: string): string =
+  if gOutput.len() == 0:
+    result = path
+  else:
+    # multiReplace() bug - #9557
+    result = path.replace(gOutput, "")
+  return result.multiReplace([("\\", "/"), ("//", "/")])
 
 proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   var file = search(fl)
