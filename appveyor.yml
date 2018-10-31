@@ -48,7 +48,7 @@ for:
       appveyor DownloadFile "https://nim-lang.org/download/nim-%NIM_VERSION%_x%ARCH%.zip" -FileName "nim-%NIM_VERSION%_x%ARCH%.zip" &&
       7z x -y "nim-%NIM_VERSION%_x%ARCH%.zip"> nul &&
       del "nim-%NIM_VERSION%_x%ARCH%.zip")
-    - SET PATH=c:\binaries\mingw%ARCH%\bin;c:\nim-%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
+    - SET PATH=c:\binaries\mingw%ARCH%\bin;c:\binaries\nim-%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
     - CD c:\projects\nimgen
     # - git clone --depth 1 https://github.com/nim-lang/nim
     # - cd nim
