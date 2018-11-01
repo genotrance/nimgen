@@ -29,7 +29,7 @@ for:
   install:
     - CD c:\
     - IF not exist "binaries" (
-      echo $NIM_VERSION &&
+      echo %NIM_VERSION% &&
       MKDIR binaries &&
       CD binaries &&
       appveyor DownloadFile "%MINGW_URL%/%MINGW_ARCHIVE%/download" -FileName "%MINGW_ARCHIVE%" &&
