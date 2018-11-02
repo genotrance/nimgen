@@ -9,8 +9,6 @@ addons:
     packages:
     - python-pygments
     - libssh2-1-dev
-    - libgcrypt20-dev
-    - libgpg-error-dev
 before_script:
   - export RELEASE=`curl --silent https://api.github.com/repos/nim-lang/nightlies/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'`
   - export TXZ=`curl --silent https://api.github.com/repos/nim-lang/nightlies/releases/latest | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/' | grep linux`
