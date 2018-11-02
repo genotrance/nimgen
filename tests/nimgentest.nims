@@ -40,20 +40,21 @@ for comp in comps:
     exec "nimble install -y"
     exec "nimble test"
 
-  if dirExists("web"/comp):
-    rmDir("web"/comp)
+  when defined(windows):
+    if dirExists("web"/comp):
+      rmDir("web"/comp)
 
-  mkDir("web"/comp)
-  for file in listFiles(".."/comp/comp) & listFiles(".."/comp):
-    if file.splitFile().ext == ".nim":
-      cpFile(file, "web"/comp/extractFilename(file))
-
-  cpFile("web"/"nimdoc.cfg", "web"/comp/"nimdoc.cfg")
-  withDir("web"/comp):
-    for file in listFiles("."):
+    mkDir("web"/comp)
+    for file in listFiles(".."/comp/comp) & listFiles(".."/comp):
       if file.splitFile().ext == ".nim":
-        exec "nim doc --git.url:. --index:on -o:" & file.changeFileExt("html") & " " & file
-        exec "pygmentize -f html -O full,linenos=1,anchorlinenos=True,lineanchors=L,style=vs -o " & file & ".html " & file
+        cpFile(file, "web"/comp/extractFilename(file))
 
-    exec "nim buildIndex -o:index.html ."
-  rmFile("web"/comp/"nimdoc.cfg")
+    cpFile("web"/"nimdoc.cfg", "web"/comp/"nimdoc.cfg")
+    withDir("web"/comp):
+      for file in listFiles("."):
+        if file.splitFile().ext == ".nim":
+          exec "nim doc --git.url:. --index:on -o:" & file.changeFileExt("html") & " " & file
+          exec "pygmentize -f html -O full,linenos=1,anchorlinenos=True,lineanchors=L,style=vs -o " & file & ".html " & file
+
+      exec "nim buildIndex -o:index.html ."
+    rmFile("web"/comp/"nimdoc.cfg")

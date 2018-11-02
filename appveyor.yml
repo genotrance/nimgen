@@ -82,7 +82,7 @@ for:
 
   install:
     - sudo apt -qq update
-    - sudo apt -qq install --yes python-pygments libssh2-1-dev libgcrypt20-dev libgpg-error-dev
+    - sudo apt -qq install --yes libssh2-1-dev libgcrypt20-dev libgpg-error-dev
     - if [ ! -e /home/appveyor/binaries ]; then
         echo $NIM_VERSION &&
         mkdir /home/appveyor/binaries &&
