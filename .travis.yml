@@ -21,7 +21,7 @@ before_script:
   - bin/nim c koch
   - ./koch boot -d:release
   - ./koch nimble
-  - export PATH=$(pwd)/bin:$PATH
+  - export PATH=$(pwd)/bin:~/.nimble/bin:$PATH
   - cd ..
 script:
   - nimble install -y
