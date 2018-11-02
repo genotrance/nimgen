@@ -1,8 +1,8 @@
 version: '{build}'
 
 image:
-  - Visual Studio 2017
   - Ubuntu
+  - Visual Studio 2017
 
 matrix:
   fast_finish: true
