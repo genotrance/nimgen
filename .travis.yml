@@ -8,9 +8,10 @@ addons:
   apt:
     packages:
     - libssh2-1-dev
-  brew:
-    packages:
-    - libssh2
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libssh2; fi
+
 before_script:
   - curl -u $TOKEN -o latest.json --silent https://api.github.com/repos/nim-lang/nightlies/releases/latest
   - export RELEASE=`cat latest.json | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'`
@@ -26,6 +27,7 @@ before_script:
   - ./koch nimble
   - export PATH=$(pwd)/bin:~/.nimble/bin:$PATH
   - cd ..
+
 script:
   - nimble install -y
   - nimble test
