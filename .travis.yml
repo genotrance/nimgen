@@ -9,7 +9,9 @@ addons:
     packages:
     - libssh2-1-dev
 before_script:
-  - curl -u $TOKEN -o latest.json https://api.github.com/repos/nim-lang/nightlies/releases/latest
+  - curl -u $TOKEN -o latest.json --silent https://api.github.com/repos/nim-lang/nightlies/releases/latest
+  - curl -u $TOKEN https://api.github.com/repos/nim-lang/nightlies/releases/latest
+  - cat latest.json
   - export RELEASE=`cat latest.json | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'`
   - export TXZ=`cat latest.json | grep '"name":' | sed -E 's/.*"([^"]+)".*/\1/' | grep linux`
   - export VERSION=`echo $TXZ | cut -d"-" -f 2,2`
