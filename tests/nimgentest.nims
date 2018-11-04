@@ -8,8 +8,11 @@ var
             "nimtess2"
           ]
 
-var nimver = staticExec("nim -v").split("\n")[0].split(" ")[3]
-if nimver >= "0.19.0":
+let
+  gccver = staticExec("gcc --version").split("\n")[0].split(" ")[^1]
+  nimver = staticExec("nim -v").split("\n")[0].split(" ")[3]
+
+if nimver >= "0.19.0" and gccver >= "5.0.0":
   comps.add("nimfastText")
 
 if detectOs(Windows):
@@ -17,6 +20,10 @@ if detectOs(Windows):
 
 if not detectOs(MacOSX):
   comps.add("nimzbar")
+
+echo "Testing comps:"
+for comp in comps:
+  echo "  " & comp
 
 if paramCount() > 2:
   for i in 3 .. paramCount():
