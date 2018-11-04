@@ -10,7 +10,7 @@ addons:
     - libssh2-1-dev
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libssh2; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install libssh2; fi
 
 before_script:
   - curl -u $TOKEN -o latest.json --silent https://api.github.com/repos/nim-lang/nightlies/releases/latest
