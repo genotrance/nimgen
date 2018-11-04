@@ -5,7 +5,7 @@ var
   comps = @["libsvm", "nim7z", "nimarchive", "nimbass", "nimbigwig",
             "nimclipboard", "nimfuzz", "nimmonocypher",
             "nimnuklear", "nimpcre", "nimrax", "nimssl", "nimssh2",
-            "nimtess2", "nimzbar"
+            "nimtess2"
           ]
 
 var nimver = staticExec("nim -v").split("\n")[0].split(" ")[3]
@@ -14,6 +14,9 @@ if nimver >= "0.19.0":
 
 if detectOs(Windows):
   comps.add("nimkerberos")
+
+if not detectOs(MacOSX):
+  comps.add("nimzbar")
 
 if paramCount() > 2:
   for i in 3 .. paramCount():
