@@ -7,7 +7,7 @@ license       = "MIT"
 
 bin = @["nimgen"]
 srcDir = "src"
-skipDirs = @["nimgen", "tests"]
+skipDirs = @["tests", "web"]
 
 # Dependencies
 
