@@ -130,7 +130,7 @@ The following keys can be used to prepare dependencies such as downloading ZIP f
 
 ```gitcheckout``` = branch, commit or tag of repository to checkout in following Git command, resets after each use. Use "-b name" for branches
 
-```gitoutput`` = directory for all following Git commands relative to `n.global:output` [default: `n.global:output` directory]
+```gitoutput``` = directory for all following Git commands relative to `n.global:output` [default: `n.global:output` directory]
 
 ```git``` = url of Git repository to clone. Full repo is pulled so gitremote + gitsparse is preferable. Resets if already present
 
@@ -146,7 +146,7 @@ _[n.post]_
 
 This section is the same as the prepare section, but for performing actions after the project has been processed.
 
-```gitoutput`` = output directory for Git reset [default: `n.global:output` directory]
+```gitoutput``` = output directory for Git reset [default: `n.global:output` directory]
 
 ```reset``` = perform a Git reset on all files after processing [default: false]
 
