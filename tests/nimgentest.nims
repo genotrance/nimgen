@@ -12,7 +12,7 @@ let
   gccver = staticExec("gcc --version").split("\n")[0].split(" ")[^1]
   nimver = staticExec("nim -v").split("\n")[0].split(" ")[3]
 
-if nimver >= "0.19.0" and gccver >= "5.0.0":
+if nimver >= "0.19.0" and (gccver >= "5.0.0" or detectOs(MacOSX)):
   comps.add("nimfastText")
 
 if detectOs(Windows):
