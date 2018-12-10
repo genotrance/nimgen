@@ -3,7 +3,7 @@ import distros, ospaths, strutils
 var
   pygonly = false
   comps = @["libsvm", "nim7z", "nimarchive", "nimbass", "nimbigwig",
-            "nimclipboard", "nimfuzz", "nimmonocypher",
+            "nimclipboard", "nimfuzzy", "nimmonocypher",
             "nimnuklear", "nimpcre", "nimrax", "nimssl", "nimssh2",
             "nimtess2"
           ]
@@ -20,6 +20,9 @@ if detectOs(Windows):
 
 if not detectOs(MacOSX):
   comps.add("nimzbar")
+
+echo "Nim version: " & nimver
+echo "GCC version: " & gccver
 
 echo "Testing comps:"
 for comp in comps:

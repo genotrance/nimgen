@@ -54,14 +54,14 @@ To see examples of nimgen in action check out the following wrappers:-
         * git checkout
     * [nimfastText](https://github.com/genotrance/nimfastText) - fastText wrapper: [docs](http://nimgen.genotrance.com/nimfastText)
         * git sparse checkout
-    * [nimfuzz](https://github.com/genotrance/nimfuzz) - fts_fuzzy_match wrapper: [docs](http://nimgen.genotrance.com/nimfuzz)
+    * [nimfuzzy](https://github.com/genotrance/nimfuzzy) - fts_fuzzy_match wrapper: [docs](http://nimgen.genotrance.com/nimfuzzy)
         * download header file
     * [nimkerberos](https://github.com/genotrance/nimkerberos) - WinKerberos wrapper: [docs](http://nimgen.genotrance.com/nimkerberos)
         * git sparse checkout
     * [nimmonocypher](https://github.com/genotrance/nimmonocypher) - monocypher wrapper: [docs](http://nimgen.genotrance.com/nimmonocypher)
         * git sparse checkout
     * [nimnuklear](https://github.com/genotrance/nimnuklear) - nuklear wrapper: [docs](https://nimgen.genotrance.com/nimnuklear)
-        * git sparse checkout 
+        * git sparse checkout
     * [nimpcre](https://github.com/genotrance/nimpcre) - PCRE wrapper: [docs](http://nimgen.genotrance.com/nimpcre)
         * git checkout
     * [nimrax](https://github.com/genotrance/nimrax) - Radix tree wrapper: [docs](http://nimgen.genotrance.com/nimrax)
