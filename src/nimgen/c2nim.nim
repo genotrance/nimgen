@@ -1,4 +1,7 @@
-import os, ospaths, regex, strutils
+import os, regex, strutils
+
+when (NimMajor, NimMinor, NimPatch) < (0, 19, 9):
+  import ospaths
 
 import external, file, fileops, gencore, globals
 
