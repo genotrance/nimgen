@@ -10,7 +10,7 @@ matrix:
 environment:
   matrix:
     - NIM_VERSION: 0.18.0
-    - NIM_VERSION: 0.19.0
+    - NIM_VERSION: 0.19.2
 
 for:
 -
@@ -50,19 +50,6 @@ for:
       del "nim-%NIM_VERSION%_x%ARCH%.zip")
     - SET PATH=c:\binaries\mingw%ARCH%\bin;c:\binaries\nim-%NIM_VERSION%\bin;%USERPROFILE%\.nimble\bin;%PATH%
     - CD c:\projects\nimgen
-    # - git clone --depth 1 https://github.com/nim-lang/nim
-    # - cd nim
-    # - git clone --depth 1 https://github.com/nim-lang/csources
-    # - cd csources
-    # - IF "%PLATFORM%" == "x64" ( build64.bat ) else ( build.bat )
-    # - cd ..
-    # - IF not exist "%DLLS_ARCHIVE%" appveyor DownloadFile "%DLLS_URL%" -FileName "%DLLS_ARCHIVE%"
-    # - 7z x -y "%DLLS_ARCHIVE%" -o"%CD%\bin"> nul
-    # - bin\nim c -d:release koch
-    # - koch boot -d:release
-    # - koch nimble -d:release
-    # - SET PATH=%CD%\bin;%PATH%
-    # - cd ..
 
   on_finish:
     - 7z a -r buildlogs-win-pkgs.zip %USERPROFILE%\.nimble\pkgs
