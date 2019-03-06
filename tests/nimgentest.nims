@@ -2,7 +2,8 @@ import distros, ospaths, strutils
 
 var
   pygonly = false
-  comps = @["libsvm", "nim7z", "nimarchive", "nimbass", "nimbigwig",
+  comps = @["libsvm", "nim7z", #"nimarchive",
+            "nimbass", "nimbigwig",
             "nimclipboard", "nimfuzzy", "nimmonocypher",
             "nimnuklear", "nimpcre", "nimrax", "nimssl", "nimssh2",
             "nimtess2"
