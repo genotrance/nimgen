@@ -5,7 +5,8 @@ var
   comps = @["libsvm", "nim7z", #"nimarchive",
             "nimbass", "nimbigwig",
             "nimclipboard", "nimfuzzy", "nimmonocypher",
-            "nimnuklear", "nimpcre", "nimrax", "nimssl", "nimssh2",
+            #"nimnuklear",
+            "nimpcre", "nimrax", "nimssl", "nimssh2",
             "nimtess2"
           ]
 
