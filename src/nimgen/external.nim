@@ -43,9 +43,10 @@ proc downloadUrl*(url: string) =
     file = url.extractFilename()
     ext = file.splitFile().ext.toLowerAscii()
 
-  var cmd = "curl $# -o $#"
-  if defined(Windows):
-    cmd = "powershell wget $# -OutFile $#"
+  var cmd = if defined(Windows):
+    "powershell [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; wget $# -OutFile $#"
+  else:
+    "curl -L $# -o $#"
 
   if not (ext == ".zip" and fileExists(gOutput/file)):
     echo "Downloading " & file
