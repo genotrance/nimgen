@@ -70,8 +70,6 @@ To see examples of nimgen in action check out the following wrappers:-
         * git sparse checkout
     * [nimtess2](https://github.com/genotrance/nimtess2) - libtess2 wrapper: [docs](http://nimgen.genotrance.com/nimtess2)
         * git checkout
-    * [libsvm](https://github.com/genotrance/libsvm) - libsvm wrapper: [docs](http://nimgen.genotrance.com/libsvm)
-        * git sparse checkout
     * [duktape-nim](https://github.com/manguluka/duktape-nim) - Duktape wrapper
         * static
 
