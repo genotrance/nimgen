@@ -57,7 +57,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
 
-  let fname = file.splitFile.name.normalize.capitalizeAscii
+  let fname = file.splitFile.name.normalize.capitalizeAscii.multiReplace([(".", "_"), ("-", "_")])
 
   if c2nimConfig.dynlib.len() != 0:
     let
