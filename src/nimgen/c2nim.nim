@@ -5,7 +5,9 @@ when (NimMajor, NimMinor, NimPatch) < (0, 19, 9):
 
 import external, file, fileops, gencore, globals
 
-const passCBase = """import os, strutils
+const passCBase = """
+
+import os, strutils
 # import std/time_t  # To use C "time_t" uncomment this line and use time_t.Time
 
 const sourcePath = currentSourcePath().splitPath.head
@@ -39,7 +41,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
 
   var
     extflags = ""
-    passC = passCBase
+    passC = "# " & file & " --> " & outfile & passCBase
     outlib = ""
     outpragma = ""
 
@@ -55,7 +57,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
 
-  let fname = file.lastPathPart.normalize
+  let fname = file.splitFile.name.normalize.capitalizeAscii
 
   if c2nimConfig.dynlib.len() != 0:
     let
