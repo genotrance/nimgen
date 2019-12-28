@@ -2,11 +2,13 @@ import distros, ospaths, strutils
 
 var
   pygonly = false
-  comps = @["nim7z", #"nimarchive",
+  comps = @["nim7z",
             "nimbass", "nimbigwig",
-            "nimclipboard", "nimfuzzy", "nimmonocypher",
+            "nimclipboard", "nimfuzzy",
+            "nimmonocypher",
             #"nimnuklear",
-            "nimpcre", "nimrax", "nimssl", "nimssh2",
+            "nimrax",
+            "nimssh2",
             "nimtess2"
           ]
 
@@ -14,8 +16,8 @@ let
   gccver = staticExec("gcc --version").split("\n")[0].split(" ")[^1]
   nimver = staticExec("nim -v").split("\n")[0].split(" ")[3]
 
-if nimver >= "0.19.0" and (gccver >= "5.0.0" or detectOs(MacOSX)):
-  comps.add("nimfastText")
+#if nimver >= "0.19.0" and (gccver >= "5.0.0" or detectOs(MacOSX)):
+#  comps.add("nimfastText")
 
 if detectOs(Windows):
   comps.add("nimkerberos")
@@ -43,7 +45,7 @@ for comp in comps:
       withDir(".."):
         exec "git clone --depth=1 https://github.com/genotrance/" & comp
 
-    exec "nimble uninstall -y " & comp, "", ""
+    echo gorgeEx("nimble uninstall -y " & comp).output
     withDir(".."/comp):
       exec "git pull"
 
