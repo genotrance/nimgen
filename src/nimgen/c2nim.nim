@@ -5,6 +5,14 @@ when (NimMajor, NimMinor, NimPatch) < (0, 19, 9):
 
 import external, file, fileops, gencore, globals
 
+const passCBase = """
+
+import os, strutils
+# import std/time_t  # To use C "time_t" uncomment this line and use time_t.Time
+
+const sourcePath = currentSourcePath().splitPath.head
+"""
+
 proc relativePath(path: string): string =
   if gOutput.len() == 0:
     result = path
@@ -33,13 +41,9 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
 
   var
     extflags = ""
-    passC = ""
+    passC = "# " & file & " --> " & outfile & passCBase
     outlib = ""
     outpragma = ""
-
-  passC = "import strutils\n"
-
-  passC &= """const sourcePath = currentSourcePath().split({'\\', '/'})[0..^2].join("/")""" & "\n"
 
   for inc in gIncludes:
     if inc.isAbsolute():
@@ -53,7 +57,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
   for prag in c2nimConfig.pragma:
     outpragma &= "{." & prag & ".}\n"
 
-  let fname = file.splitFile().name.multiReplace([(".", "_"), ("-", "_")])
+  let fname = file.splitFile.name.multiReplace([(".", "_"), ("-", "_")]).normalize.capitalizeAscii
 
   if c2nimConfig.dynlib.len() != 0:
     let
@@ -87,7 +91,7 @@ proc c2nim*(fl, outfile: string, c2nimConfig: c2nimConfigObj) =
     if file.isAbsolute():
       passC &= "const header$# = \"$#\"\n" % [fname, file]
     else:
-      passC &= "const header$# = sourcePath & \"$#\"\n" %
+      passC &= "const header$# = sourcePath / \"$#\"\n" %
         [fname, file.relativePath()]
     extflags = "--header:header$#" % fname
   # Run c2nim on generated file

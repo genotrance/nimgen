@@ -46,7 +46,7 @@ proc downloadUrl*(url: string) =
   var cmd = if defined(Windows):
     "powershell [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; wget $# -OutFile $#"
   else:
-    "curl -L $# -o $#"
+    "curl -Lk $# -o $#"
 
   if not (ext == ".zip" and fileExists(gOutput/file)):
     echo "Downloading " & file
