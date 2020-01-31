@@ -1,4 +1,4 @@
-import os, osproc, regex, streams, strutils
+import os, osproc, regex, strutils
 
 import globals
 

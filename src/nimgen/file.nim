@@ -1,4 +1,4 @@
-import os, pegs, regex, strutils, tables
+import os, pegs, strutils, tables
 
 when (NimMajor, NimMinor, NimPatch) < (0, 19, 9):
   import ospaths
