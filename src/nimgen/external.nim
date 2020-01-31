@@ -22,7 +22,7 @@ proc execAction*(cmd: string): string =
   when defined(Linux) or defined(MacOSX):
     ccmd = "bash -c '" & cmd & "'"
 
-  echo "Running '" & ccmd[0..min(64, len(ccmd))] & "'"
+  echo "Running '" & ccmd[0..min(64, len(ccmd)-1)] & "'"
   return execProc(ccmd)
 
 proc extractZip*(zipfile: string) =
