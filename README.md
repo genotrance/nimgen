@@ -1,3 +1,5 @@
+Nimgen has been superseded by [nimterop](https://github.com/nimterop/nimterop). Existing wrappers are slowly being migrated over to nimterop. No new features will be implemented going forward.
+
 [![Chat on Gitter](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/nimgen/Lobby)
 [![Build status](https://ci.appveyor.com/api/projects/status/05t5ja88lmv1rt3r/branch/master?svg=true)](https://ci.appveyor.com/project/genotrance/nimgen/branch/master)
 [![Build Status](https://travis-ci.org/genotrance/nimgen.svg?branch=master)](https://travis-ci.org/genotrance/nimgen)
@@ -46,8 +48,6 @@ To see examples of nimgen in action check out the following wrappers:-
 * Compile C/C++ code into binary
     * [nim7z](https://github.com/genotrance/nim7z) - 7z decoder wrapper: [docs](http://nimgen.genotrance.com/nim7z)
         * git sparse checkout
-    * [nimarchive](https://github.com/genotrance/nimarchive) - libarchive wrapper: [docs](http://nimgen.genotrance.com/nimarchive)
-        * git sparse checkout
     * [nimbigwig](https://github.com/genotrance/nimbigwig) - libbigWig wrapper: [docs](http://nimgen.genotrance.com/nimbigwig)
         * git checkout
     * [nimclipboard](https://github.com/genotrance/nimclipboard) - libclipboard wrapper: [docs](http://nimgen.genotrance.com/nimclipboard)
@@ -62,12 +62,8 @@ To see examples of nimgen in action check out the following wrappers:-
         * git sparse checkout
     * [nimnuklear](https://github.com/genotrance/nimnuklear) - nuklear wrapper: [docs](https://nimgen.genotrance.com/nimnuklear)
         * git sparse checkout
-    * [nimpcre](https://github.com/genotrance/nimpcre) - PCRE wrapper: [docs](http://nimgen.genotrance.com/nimpcre)
-        * git checkout
     * [nimrax](https://github.com/genotrance/nimrax) - Radix tree wrapper: [docs](http://nimgen.genotrance.com/nimrax)
         * git checkout
-    * [nimssl](https://github.com/genotrance/nimssl) - OpenSSL wrapper: [docs](http://nimgen.genotrance.com/nimssl)
-        * git sparse checkout
     * [nimtess2](https://github.com/genotrance/nimtess2) - libtess2 wrapper: [docs](http://nimgen.genotrance.com/nimtess2)
         * git checkout
     * [duktape-nim](https://github.com/manguluka/duktape-nim) - Duktape wrapper
