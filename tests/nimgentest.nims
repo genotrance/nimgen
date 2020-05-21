@@ -2,7 +2,7 @@ import distros, ospaths, strutils
 
 var
   pygonly = false
-  comps = @["nim7z",
+  comps = @[
             "nimbass", "nimbigwig",
             "nimclipboard", "nimfuzzy",
             "nimmonocypher",
@@ -18,6 +18,10 @@ let
 
 #if nimver >= "0.19.0" and (gccver >= "5.0.0" or detectOs(MacOSX)):
 #  comps.add("nimfastText")
+
+if nimver >= "1.2.0":
+  # csize_t
+  comps.add("nim7z")
 
 if detectOs(Windows):
   comps.add("nimkerberos")
