@@ -5,7 +5,14 @@ os:
 language: c
 
 env:
+  - BRANCH=0.20.2
+  - BRANCH=1.0.6
+  - BRANCH=1.2.0
   - BRANCH=devel
+
+cache:
+  directories:
+    - "$HOME/.choosenim"
 
 addons:
   apt:
@@ -16,11 +23,8 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install libssh2; fi
 
 install:
-  - export CHOOSENIM_CHOOSE_VERSION=$BRANCH
-  - |
-      curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
-      sh init.sh -y
-  - export PATH=$HOME/.nimble/bin:$PATH
+  - curl https://gist.github.com/genotrance/fb53504a4fba88bc5201d3783df5c522/raw/travis.sh -LsSf -o travis.sh
+  - source travis.sh
 
 script:
   - nimble install -y
