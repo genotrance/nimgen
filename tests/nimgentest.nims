@@ -3,7 +3,7 @@ import distros, ospaths, strutils
 var
   pygonly = false
   comps = @[
-            "nimbass", "nimbigwig",
+            "nimbigwig",
             "nimclipboard", "nimfuzzy",
             "nimmonocypher",
             #"nimnuklear",

@@ -38,8 +38,6 @@ Nimgen supports compiling in C/C++ sources and static libraries as well as loadi
 
 To see examples of nimgen in action check out the following wrappers:-
 * Link with a dynamic library
-    * [nimbass](https://github.com/genotrance/nimbass) - BASS audio wrapper: [docs](http://nimgen.genotrance.com/nimbass)
-        * download ZIP with headers and binary
     * [nimlibxlsxwriter](https://github.com/KeepCoolWithCoolidge/nimlibxlsxwriter) - libxlsxwriter wrapper
         * git checkout
     * [nim-clblast](https://github.com/numforge/nim-clblast) - OpenCL BLAS wrapper
