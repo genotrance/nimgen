@@ -122,6 +122,8 @@ The following keys can be used to prepare dependencies such as downloading ZIP f
 
 ```gitcheckout``` = branch, commit or tag of repository to checkout in following Git command, resets after each use. Use "-b name" for branches
 
+```gitbranch``` = master/main branch of the repository, defaults to `master`
+
 ```gitoutput``` = directory for all following Git commands relative to `n.global:output` [default: `n.global:output` directory]
 
 ```git``` = url of Git repository to clone. Full repo is pulled so gitremote + gitsparse is preferable. Resets if already present
