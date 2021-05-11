@@ -23,6 +23,7 @@ var
 
   # State tracking
   gGitCheckout* = ""
+  gGitBranch* = ""
   gGitOutput* = ""
   gProjectDir* = ""
   gCompile*: seq[string] = @[]

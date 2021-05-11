@@ -259,6 +259,8 @@ proc runCfg*(cfg: string) =
                 extractZip(prepVal)
               of "gitcheckout":
                 gGitCheckout = prepVal
+              of "gitbranch":
+                gGitBranch = prepVal
               of "gitoutput":
                 gGitOutput = gOutput/prepVal
                 createDir(gGitOutput)
