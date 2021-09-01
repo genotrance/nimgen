@@ -80,14 +80,15 @@ proc gitCheckout*(file: string) =
     echo "  Retrying ..."
 
 proc gitPull() =
+  let branch = if gGitBranch != "": gGitBranch else: "master"
   if gGitCheckout.len() != 0:
     echo "Checking out " & gGitCheckout
-    discard execProc("git pull --tags origin master")
+    discard execProc("git pull --tags origin " & branch)
     discard execProc("git checkout " & gGitCheckout)
     gGitCheckout = ""
   else:
     echo "Pulling repository"
-    discard execProc("git pull --depth=1 origin master")
+    discard execProc("git pull --depth=1 origin " & branch)
 
 proc gitRemotePull*(url: string, pull=true) =
   if dirExists(gGitOutput/".git"):
